@@ -5,11 +5,11 @@ plugins {
 }
 
 android {
-    namespace = "com.example.listitemselector"
+    namespace = "com.jimx.listitemselector"
     compileSdk = 36
 
     defaultConfig {
-        applicationId = "com.example.listitemselector"
+        applicationId = "com.jimx.listitemselector"
         minSdk = 31
         targetSdk = 36
         versionCode = 1
@@ -49,6 +49,7 @@ dependencies {
     implementation(libs.androidx.ui.graphics)
     implementation(libs.androidx.ui.tooling.preview)
     implementation(libs.androidx.material3)
+    implementation(libs.androidx.lifecycle.viewmodel.compose)
     testImplementation(libs.junit)
     androidTestImplementation(libs.androidx.junit)
     androidTestImplementation(libs.androidx.espresso.core)
