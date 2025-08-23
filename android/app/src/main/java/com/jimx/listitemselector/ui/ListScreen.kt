@@ -47,14 +47,13 @@ fun ItemsList(selectedId: Int?, items: List<ItemData>, modifier: Modifier = Modi
     LazyColumn(modifier = modifier) {
         items(items) { item ->
             ListItemLine(item,
-                isChosen = item.id == selectedId,
-                modifier = Modifier.padding(8.dp))
+                isChosen = item.id == selectedId)
         }
     }
 }
 
 @Composable
-fun ListItemLine(item: ItemData, isChosen: Boolean, modifier: Modifier = Modifier) {
+fun ListItemLine(item: ItemData, isChosen: Boolean) {
     ListItem(
         headlineContent = { Text(item.name) },
         supportingContent = {
@@ -153,8 +152,8 @@ fun ListScreen(
     }
 
     Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp)) {
-    }
+        modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp),
+        content = { })
 
     ListLayout(
         { listViewModel.choose() },

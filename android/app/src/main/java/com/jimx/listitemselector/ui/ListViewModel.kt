@@ -26,7 +26,7 @@ class ListViewModel : ViewModel() {
     }
 
     fun choose() {
-        val chosenRandomId = getRandomId();
+        val chosenRandomId = getRandomId()
         if (chosenRandomId == null)
             return
 
@@ -41,7 +41,7 @@ class ListViewModel : ViewModel() {
     }
 
     fun getRandomId(): Int? {
-        val currentItems = _uiState.value.items;
+        val currentItems = _uiState.value.items
         if (currentItems.isEmpty())
             return null
 
