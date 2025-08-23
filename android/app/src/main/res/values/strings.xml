@@ -1,3 +1,4 @@
 <resources>
-    <string name="app_name">ListItemSelector</string>
+    <string name="app_name">List Item Selector</string>
+    <string name="title_text">List items</string>
 </resources>

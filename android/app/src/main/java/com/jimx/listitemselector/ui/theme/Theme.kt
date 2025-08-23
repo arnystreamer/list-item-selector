@@ -1,4 +1,4 @@
-package com.example.listitemselector.ui.theme
+package com.jimx.listitemselector.ui.theme
 
 import android.os.Build
 import androidx.compose.foundation.isSystemInDarkTheme
