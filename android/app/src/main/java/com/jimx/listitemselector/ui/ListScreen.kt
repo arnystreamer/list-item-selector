@@ -1,5 +1,7 @@
 package com.jimx.listitemselector.ui
 
+import android.content.Intent
+import android.content.Context
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -19,6 +21,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,6 +33,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
@@ -81,7 +85,7 @@ fun ListLayout(
 )
 {
     val image = painterResource(R.drawable.bg_compose_background)
-    val title = stringResource(R.string.title_text)
+    val title = stringResource(R.string.list_title_text)
 
     Box {
         Column {
@@ -136,17 +140,35 @@ fun ListScreen(
     val snackbarHostState = remember { SnackbarHostState() }
     val scope = rememberCoroutineScope()
     val uiState by listViewModel.uiState.collectAsState()
+    val context = LocalContext.current
 
     LaunchedEffect(Unit) {
         listViewModel.events.collect {
             when (it) {
-                is ListUiEvent.NotifyAboutSelectedListItem -> {
+                is ListUiEvent.NotifyAboutSelectedListItem ->
+                    scope.launch {
+                        val snackbarResult = snackbarHostState.showSnackbar(
+                            message = "Selected item: ${it.item.name}",
+                            actionLabel = "Share"
+                        )
+
+                        when (snackbarResult) {
+                            SnackbarResult.ActionPerformed -> {
+                                shareChosen(context,it.item)
+                            }
+                            SnackbarResult.Dismissed -> {
+                                // do nothing
+                            }
+                        }
+                    }
+
+
+                is ListUiEvent.NotifyAboutError ->
                     scope.launch {
                         snackbarHostState.showSnackbar(
-                            "Selected item: ${it.item.name}"
+                            message = it.message ?: "Unknown error"
                         )
                     }
-                }
             }
         }
     }
@@ -175,4 +197,16 @@ fun ListScreenPreview() {
             ListScreen()
         }
     }
+}
+
+private fun shareChosen(context: Context, item: ItemData) {
+    val intent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_SUBJECT, item.name)
+        putExtra(Intent.EXTRA_TEXT, item.description)
+    }
+
+    context.startActivity(
+        Intent.createChooser(intent, context.getString(R.string.share_title))
+    )
 }

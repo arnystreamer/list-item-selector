@@ -1,4 +1,7 @@
 <resources>
     <string name="app_name">List Item Selector</string>
-    <string name="title_text">List items</string>
+    <string name="category_title_text">Category</string>
+    <string name="list_title_text">List items</string>
+    <string name="back_button">Back</string>
+    <string name="share_title">New list item was chosen!</string>
 </resources>

@@ -17,9 +17,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
-import com.jimx.listitemselector.ui.ListScreen
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
+import dagger.hilt.android.AndroidEntryPoint
 
+@AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     private val TAG = "MainActivity"
 
@@ -43,7 +44,7 @@ class MainActivity : ComponentActivity() {
                                 .calculateEndPadding(layoutDirection)),
                     color = MaterialTheme.colorScheme.background
                 ) {
-                    ListScreen()
+                    ListItemSelectorApp()
                 }
             }
         }
