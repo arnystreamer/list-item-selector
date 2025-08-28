@@ -25,6 +25,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.jimx.listitemselector.ui.CatalogScreen
+import com.jimx.listitemselector.ui.CatalogViewModel
 import com.jimx.listitemselector.ui.ListScreen
 import com.jimx.listitemselector.ui.ListViewModel
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
@@ -77,10 +78,13 @@ fun ListItemSelectorApp(
             navController,
             startDestination = ListItemSelectorScreen.Catalog.name,
             modifier = Modifier.padding(innerPadding)) {
-                composable(route = ListItemSelectorScreen.Catalog.name) {
+                composable(route = ListItemSelectorScreen.Catalog.name
+                ) { backStackEntry ->
+                    val vm: CatalogViewModel = hiltViewModel(backStackEntry)
                     CatalogScreen({ catalog ->
                         navController.navigate("${ListItemSelectorScreen.List.name}/${catalog.id}")
-                    })
+                    },
+                        vm)
                 }
                 composable(
                     route = ListItemSelectorScreen.List.name + "/{categoryId}",
