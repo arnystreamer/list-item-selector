@@ -1,7 +1,7 @@
 package com.jimx.listitemselector
 
 import androidx.lifecycle.SavedStateHandle
-import com.jimx.listitemselector.data.FakeListRepositoryImpl
+import com.jimx.listitemselector.data.list.FakeListRepositoryImpl
 import com.jimx.listitemselector.model.ItemData
 import com.jimx.listitemselector.ui.ListViewModel
 import org.junit.Test
