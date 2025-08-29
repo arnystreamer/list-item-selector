@@ -1,4 +1,4 @@
-package com.jimx.listitemselector.ui
+package com.jimx.listitemselector.ui.list
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
@@ -25,11 +25,11 @@ class ListViewModel @Inject constructor(
 ) : ViewModel() {
 
     private val categoryId: Int = checkNotNull(savedStateHandle["categoryId"])
+
     private val _uiState = MutableStateFlow(ListUiState())
     val uiState: StateFlow<ListUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<ListUiEvent>()
-
     val events: SharedFlow<ListUiEvent> = _events.asSharedFlow()
 
     fun reset() {
@@ -61,6 +61,10 @@ class ListViewModel @Inject constructor(
                         )
                     }
                 }
+        }
+
+        viewModelScope.launch {
+            repo.refresh(categoryId)
         }
     }
 

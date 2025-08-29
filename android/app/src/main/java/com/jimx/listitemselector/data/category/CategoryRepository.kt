@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface CategoryRepository {
     fun loadCategories(): Flow<List<CategoryData>>
+    suspend fun refresh()
 }

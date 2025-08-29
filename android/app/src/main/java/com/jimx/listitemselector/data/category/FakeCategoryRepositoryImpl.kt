@@ -8,6 +8,9 @@ class FakeCategoryRepositoryImpl : CategoryRepository {
     private val itemsFlow = MutableStateFlow<List<CategoryData>>(emptyList())
 
     override fun loadCategories(): Flow<List<CategoryData>> = itemsFlow
+    override suspend fun refresh() {
+
+    }
 
     fun setItems(items: List<CategoryData>) {
         itemsFlow.value = items

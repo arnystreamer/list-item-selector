@@ -1,4 +1,4 @@
-package com.jimx.listitemselector.ui
+package com.jimx.listitemselector.ui.catalog
 
 import com.jimx.listitemselector.model.CategoryData
 

@@ -5,5 +5,6 @@ import kotlinx.coroutines.flow.Flow
 
 interface LocalCategoryDatasource {
     fun observeItems(): Flow<List<CategoryData>>
+    suspend fun replaceItems(newItems: List<CategoryEntity>)
 }
 

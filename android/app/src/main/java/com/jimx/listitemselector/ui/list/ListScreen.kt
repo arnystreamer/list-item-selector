@@ -1,4 +1,4 @@
-package com.jimx.listitemselector.ui
+package com.jimx.listitemselector.ui.list
 
 import android.content.Intent
 import android.content.Context
@@ -81,13 +81,13 @@ fun ListItemLine(item: ItemData, isChosen: Boolean) {
 fun ListLayout(
     onChooseListItemClick: () -> Unit,
     items: List<ItemData>,
-    selectedId: Int?
-)
-{
+    selectedId: Int?,
+    modifier: Modifier = Modifier
+) {
     val image = painterResource(R.drawable.bg_compose_background)
     val title = stringResource(R.string.list_title_text)
 
-    Box {
+    Box(modifier = modifier) {
         Column {
             Image(
                 painter = image,
@@ -106,7 +106,7 @@ fun ListLayout(
         }
     }
 
-    Box()
+    Box(modifier = modifier.fillMaxSize())
     {
         if (false) {
             FloatingActionButton(
@@ -149,7 +149,8 @@ fun ListScreen(
                     scope.launch {
                         val snackbarResult = snackbarHostState.showSnackbar(
                             message = "Selected item: ${it.item.name}",
-                            actionLabel = "Share"
+                            actionLabel = "Share",
+                            withDismissAction = true
                         )
 
                         when (snackbarResult) {
@@ -162,7 +163,6 @@ fun ListScreen(
                         }
                     }
 
-
                 is ListUiEvent.NotifyAboutError ->
                     scope.launch {
                         snackbarHostState.showSnackbar(
@@ -173,16 +173,19 @@ fun ListScreen(
         }
     }
 
-    Scaffold(snackbarHost = { SnackbarHost(snackbarHostState) },
-        modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp),
-        content = { })
-
-    ListLayout(
-        { listViewModel.choose() },
-        uiState.items,
-        uiState.currentSelectedItemId
-    )
-
+    Scaffold(
+        snackbarHost = {
+            SnackbarHost(
+                snackbarHostState,
+                modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp)
+            )
+        },
+        content = { paddingValues -> ListLayout(
+            { listViewModel.choose() },
+            uiState.items,
+            uiState.currentSelectedItemId,
+            Modifier.padding(paddingValues)
+        ) })
 }
 
 @Preview(showBackground = true)
@@ -202,8 +205,7 @@ fun ListScreenPreview() {
 private fun shareChosen(context: Context, item: ItemData) {
     val intent = Intent(Intent.ACTION_SEND).apply {
         type = "text/plain"
-        putExtra(Intent.EXTRA_SUBJECT, item.name)
-        putExtra(Intent.EXTRA_TEXT, item.description)
+        putExtra(Intent.EXTRA_TEXT, "Chosen item: ${item.name}. Let's watch it!")
     }
 
     context.startActivity(

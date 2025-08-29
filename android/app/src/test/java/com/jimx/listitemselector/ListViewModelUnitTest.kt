@@ -3,7 +3,7 @@ package com.jimx.listitemselector
 import androidx.lifecycle.SavedStateHandle
 import com.jimx.listitemselector.data.list.FakeListRepositoryImpl
 import com.jimx.listitemselector.model.ItemData
-import com.jimx.listitemselector.ui.ListViewModel
+import com.jimx.listitemselector.ui.list.ListViewModel
 import org.junit.Test
 
 import org.junit.Assert.*

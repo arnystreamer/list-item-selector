@@ -8,6 +8,9 @@ class FakeListRepositoryImpl : ListRepository {
     private val itemsFlow = MutableStateFlow<List<ItemData>>(emptyList())
 
     override fun loadListItems(categoryId: Int): Flow<List<ItemData>> = itemsFlow
+    override suspend fun refresh(categoryId: Int) {
+
+    }
 
     fun setItems(items: List<ItemData>) {
         itemsFlow.value = items

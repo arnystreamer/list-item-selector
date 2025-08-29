@@ -14,6 +14,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
@@ -22,12 +23,13 @@ import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.composable
+import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.jimx.listitemselector.ui.CatalogScreen
-import com.jimx.listitemselector.ui.CatalogViewModel
-import com.jimx.listitemselector.ui.ListScreen
-import com.jimx.listitemselector.ui.ListViewModel
+import com.jimx.listitemselector.ui.catalog.CatalogScreen
+import com.jimx.listitemselector.ui.catalog.CatalogViewModel
+import com.jimx.listitemselector.ui.list.ListScreen
+import com.jimx.listitemselector.ui.list.ListViewModel
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
 enum class ListItemSelectorScreen()
@@ -36,15 +38,36 @@ enum class ListItemSelectorScreen()
     List
 }
 
+fun getNameByScreen(screen: ListItemSelectorScreen) : String {
+    return when (screen) {
+        ListItemSelectorScreen.Catalog -> "Catalog"
+        ListItemSelectorScreen.List -> "List"
+    }
+}
+
+fun getScreenByRoute(route: String?) : ListItemSelectorScreen {
+    if (route == null)
+        return ListItemSelectorScreen.Catalog
+
+    if (route.startsWith(ListItemSelectorScreen.Catalog.name))
+        return ListItemSelectorScreen.Catalog
+
+    if (route.startsWith(ListItemSelectorScreen.List.name))
+        return ListItemSelectorScreen.List
+
+    return ListItemSelectorScreen.Catalog
+}
+
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListItemSelectorAppBar(
-    canNavigateBack: Boolean,
-       navigateUp: () -> Unit,
-       modifier: Modifier = Modifier) {
+        currentScreen: ListItemSelectorScreen,
+        canNavigateBack: Boolean,
+        navigateUp: () -> Unit,
+        modifier: Modifier = Modifier) {
     TopAppBar(
         title = {
-            Text(stringResource(id = R.string.app_name)) },
+            Text(getNameByScreen(currentScreen)) },
         colors = TopAppBarDefaults.mediumTopAppBarColors(
             containerColor = MaterialTheme.colorScheme.primaryContainer
         ),
@@ -66,11 +89,15 @@ fun ListItemSelectorAppBar(
 fun ListItemSelectorApp(
     navController: NavHostController = rememberNavController()
 ) {
+    val backStackEntry by navController.currentBackStackEntryAsState()
+    val currentScreen = getScreenByRoute(backStackEntry?.destination?.route)
+
     Scaffold(
         topBar = {
             ListItemSelectorAppBar(
-                canNavigateBack = false,
-                navigateUp = { /* TODO: implement back navigation */ }
+                currentScreen,
+                canNavigateBack = navController.previousBackStackEntry != null,
+                navigateUp = { navController.navigateUp() }
             )
         }
     ) { innerPadding ->
@@ -83,8 +110,7 @@ fun ListItemSelectorApp(
                     val vm: CatalogViewModel = hiltViewModel(backStackEntry)
                     CatalogScreen({ catalog ->
                         navController.navigate("${ListItemSelectorScreen.List.name}/${catalog.id}")
-                    },
-                        vm)
+                    },  vm)
                 }
                 composable(
                     route = ListItemSelectorScreen.List.name + "/{categoryId}",

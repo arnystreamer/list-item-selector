@@ -5,4 +5,5 @@ import kotlinx.coroutines.flow.Flow
 
 interface ListRepository {
     fun loadListItems(categoryId: Int): Flow<List<ItemData>>
+    suspend fun refresh(categoryId: Int)
 }

@@ -1,14 +1,10 @@
 package com.jimx.listitemselector.data.list.datasource
 
-import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.data.Datasource
 import jakarta.inject.Inject
 
 class RemoteListDatasourceImpl @Inject constructor() : RemoteListDatasource {
-    override suspend fun replaceItems(
-        categoryId: Int,
-        items: List<ItemData>
-    ) {
-        TODO("Not yet implemented")
+    override suspend fun fetchItems(categoryId: Int): List<ListDto> {
+        return Datasource().loadListItems(categoryId).map { ListDto(it.id, it.name, it.description) }
     }
-
 }

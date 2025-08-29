@@ -1,4 +1,4 @@
-package com.jimx.listitemselector.ui
+package com.jimx.listitemselector.ui.list
 
 import com.jimx.listitemselector.model.ItemData
 

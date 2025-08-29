@@ -1,5 +1,6 @@
-package com.jimx.listitemselector.ui
+package com.jimx.listitemselector.ui.catalog
 
+import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
@@ -83,6 +84,8 @@ fun CatalogScreen(
     catalogViewModel: CatalogViewModel = viewModel()
 ) {
     val uiState by catalogViewModel.uiState.collectAsState()
+    Log.d("CatalogScreen", "uiState: $uiState")
+
     CatalogLayout(uiState.items, { onCatalogItemClick(it) })
 }
 
