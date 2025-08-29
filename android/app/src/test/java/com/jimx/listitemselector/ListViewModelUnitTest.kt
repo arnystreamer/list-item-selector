@@ -1,6 +1,9 @@
 package com.jimx.listitemselector
 
-import com.jimx.listitemselector.ui.ListViewModel
+import androidx.lifecycle.SavedStateHandle
+import com.jimx.listitemselector.data.list.FakeListRepositoryImpl
+import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.ui.list.ListViewModel
 import org.junit.Test
 
 import org.junit.Assert.*
@@ -11,10 +14,19 @@ import org.junit.Assert.*
  * See [testing documentation](http://d.android.com/tools/testing).
  */
 class ListViewModelUnitTest {
-    private val viewModel = ListViewModel()
+
+    val repo = FakeListRepositoryImpl()
+    val savedStateHandle = SavedStateHandle(mapOf("categoryId" to 1))
+    private val viewModel = ListViewModel(savedStateHandle, repo)
 
     @Test
     fun listViewModel_reset_currentSelectedItemIdIsNull() {
+        repo.setItems(
+            listOf(
+                ItemData(1, "Item 1"),
+                ItemData(2, "Item 2")
+            )
+        )
         viewModel.reset()
         assertNull(viewModel.uiState.value.currentSelectedItemId)
     }
