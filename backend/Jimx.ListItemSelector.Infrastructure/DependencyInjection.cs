@@ -1,4 +1,6 @@
-﻿using Microsoft.EntityFrameworkCore;
+﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Infrastructure.Repositories;
+using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 
@@ -12,6 +14,9 @@ public static class DependencyInjection
 
         services.AddDbContext<AppDbContext>(options =>
             options.UseNpgsql(connectionString));
+
+        services.AddScoped<IListCategoriesRepository, ListCategoriesRepository>();
+        services.AddScoped<IListItemsRepository, ListItemsRepository>();
 
         return services;
     }
