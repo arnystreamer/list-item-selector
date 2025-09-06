@@ -1,5 +1,6 @@
-﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
-using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
+using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Domain.Entities;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListCategories.Commands.UpdateListCategory;
@@ -15,16 +16,13 @@ public class UpdateListCategoryHandler : IRequestHandler<UpdateListCategoryComma
 
     public async Task<Result> Handle(UpdateListCategoryCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _repository.GetByIdAsync(request.Id, cancellationToken);
-        if (entity == null)
+        var entity = new ListCategory(request.Id, request.Name);
+        var result = await _repository.UpdateAsync(entity, cancellationToken);
+        if (!result)
         {
-            return Result.Failure([$"List category with id {request.Id} not found"]);
+            return Result.Fail($"Updating list category with id {request.Id} was unsuccessful");
         }
         
-        entity.Name = request.Name;
-
-        await _repository.UpdateAsync(entity, cancellationToken);
-        
-        return Result.Success();
+        return Result.Ok();
     }
 }

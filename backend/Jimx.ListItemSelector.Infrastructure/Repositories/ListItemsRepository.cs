@@ -1,6 +1,8 @@
 ﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
 using Jimx.ListItemSelector.Domain.Common;
 using Jimx.ListItemSelector.Domain.Entities;
+using Jimx.ListItemSelector.Infrastructure.Mapping;
+using Jimx.ListItemSelector.Infrastructure.Persistence;
 using Jimx.ListItemSelector.Infrastructure.Specifications;
 using Microsoft.EntityFrameworkCore;
 
@@ -15,38 +17,65 @@ public class ListItemsRepository : IListItemsRepository
         _context = context;
     }
 
-    public async Task<int> AddAsync(string name, string? description, CancellationToken cancellationToken)
+    public async Task<int> AddAsync(ListItem listItem, CancellationToken cancellationToken)
     {
-        var entry = _context.ListItems.Add(new ListItem() { Name = name, Description = description });
+        var entity = listItem.ToEntity();
+        entity.UpdatedAt = DateTime.UtcNow;
+        
+        var entry = _context.ListItems.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
         return entry.Entity.Id;
     }
 
     public async Task<ListItem?> GetByIdAsync(int id, CancellationToken cancellationToken)
     {
-        return await _context.ListItems.FirstOrDefaultAsync(c => c.Id == id, cancellationToken);
+        var entity = await _context.ListItems.FindAsync([id], cancellationToken);
+        return entity?.ToDomain();
     }
 
-    public Task<List<ListItem>> GetAsync(ISpecification<ListItem> specification, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ListItem>> GetAsync(ISpecification<ListItem> domainSpecification, CancellationToken cancellationToken)
     {
-        var query = SpecificationEvaluator.GetQuery(_context.ListItems, specification);
-        return query.AsNoTracking().ToListAsync(cancellationToken);
+        var entitySpecification = domainSpecification.ToEntitySpecification();
+        var query = SpecificationEvaluator.GetQuery(_context.ListItems, entitySpecification);
+        return await query.AsNoTracking()
+            .Select(i => i.ToDomain())
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<List<ListItem>> GetAllAsync(CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ListItem>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _context.ListItems.AsNoTracking().ToListAsync(cancellationToken);
+        return await _context.ListItems.AsNoTracking().Select(i => i.ToDomain()).ToListAsync(cancellationToken);
     }
 
-    public async Task UpdateAsync(ListItem entity, CancellationToken cancellationToken)
+    public async Task<bool> UpdateAsync(ListItem listItem, CancellationToken cancellationToken)
     {
+        var incomingEntity = listItem.ToEntity();
+        var entity = await _context.ListItems.FindAsync([incomingEntity.Id], cancellationToken);
+        if (entity == null)
+        {
+            return false;
+        }
+        
+        entity.Name = incomingEntity.Name;
+        entity.Description = incomingEntity.Description;
+        entity.UpdatedAt = DateTime.UtcNow;
+        
         _context.ListItems.Update(entity);
         await _context.SaveChangesAsync(cancellationToken);
+
+        return true;
     }
 
-    public async Task DeleteAsync(ListItem entity, CancellationToken cancellationToken)
+    public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)
     {
+        var entity = await _context.ListItems.FindAsync([id], cancellationToken);
+        if (entity == null)
+        {
+            return false;
+        }
+        
         _context.ListItems.Remove(entity);
         await _context.SaveChangesAsync(cancellationToken);
+        return true;
     }
 }

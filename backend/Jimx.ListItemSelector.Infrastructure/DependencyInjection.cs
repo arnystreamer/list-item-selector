@@ -1,4 +1,5 @@
 ﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Infrastructure.Persistence;
 using Jimx.ListItemSelector.Infrastructure.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;

@@ -1,11 +1,12 @@
 ﻿using FluentValidation;
-using Jimx.ListItemSelector.Application.Common.Models;
+using Jimx.Common.Models;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.Common.Behaviors;
 
 public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TRequest, Result<TResponse>>
     where TRequest : IRequest<Result<TResponse>>
+    where TResponse : class
 {
     private readonly IEnumerable<IValidator<TRequest>> _validators;
 
@@ -29,7 +30,7 @@ public class ValidationBehavior<TRequest, TResponse> : IPipelineBehavior<TReques
 
             if (errorMessages.Any())
             {
-                return Result<TResponse>.Failure(errorMessages);
+                return Result<TResponse>.Fail(errorMessages);
             }
         }
         

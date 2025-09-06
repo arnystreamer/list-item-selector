@@ -1,10 +1,11 @@
-﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
-using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
+using Jimx.Common.WebApi.Models;
+using Jimx.ListItemSelector.Application.Common.Interfaces;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListCategories.Commands.CreateListCategory;
 
-public class CreateListCategoryHandler : IRequestHandler<CreateListCategoryCommand, Result<int>>
+public class CreateListCategoryHandler : IRequestHandler<CreateListCategoryCommand, Result<IdObject>>
 {
     private readonly IListCategoriesRepository _repository;
     
@@ -13,10 +14,11 @@ public class CreateListCategoryHandler : IRequestHandler<CreateListCategoryComma
         _repository = repository;
     }
 
-    public async Task<Result<int>> Handle(CreateListCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result<IdObject>> Handle(CreateListCategoryCommand request, CancellationToken cancellationToken)
     {
-        var id = await _repository.AddAsync(request.Name, cancellationToken);
-        return Result<int>.Success(id);
+        var domainItem = request.ToDomain();
+        var id = await _repository.AddAsync(domainItem, cancellationToken);
+        return Result<IdObject>.Ok(new IdObject(id));
 
     }
 }

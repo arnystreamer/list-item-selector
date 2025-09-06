@@ -1,10 +1,11 @@
-﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
-using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
+using Jimx.Common.WebApi.Models;
+using Jimx.ListItemSelector.Application.Common.Interfaces;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListItems.Commands.CreateListItem;
 
-public class CreateListItemHandler : IRequestHandler<CreateListItemCommand, Result<int>>
+public class CreateListItemHandler : IRequestHandler<CreateListItemCommand, Result<IdObject>>
 {
     private readonly IListItemsRepository _repository;
 
@@ -13,9 +14,10 @@ public class CreateListItemHandler : IRequestHandler<CreateListItemCommand, Resu
         _repository = repository;
     }
 
-    public async Task<Result<int>> Handle(CreateListItemCommand request, CancellationToken cancellationToken)
+    public async Task<Result<IdObject>> Handle(CreateListItemCommand request, CancellationToken cancellationToken)
     {
-        var id = await _repository.AddAsync(request.Name, request.Description, cancellationToken);
-        return Result<int>.Success(id);
+        var domainItem = request.ToDomain();
+        var id = await _repository.AddAsync(domainItem, cancellationToken);
+        return Result<IdObject>.Ok(new IdObject(id));
     }
 }

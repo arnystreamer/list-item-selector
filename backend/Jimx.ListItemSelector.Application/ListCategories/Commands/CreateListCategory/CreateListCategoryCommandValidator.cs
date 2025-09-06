@@ -7,8 +7,10 @@ public class CreateListCategoryCommandValidator : AbstractValidator<CreateListCa
     public CreateListCategoryCommandValidator()
     {
         RuleFor(x => x.Name)
-            .NotEmpty().WithMessage("Name cannot be empty")
-            .MaximumLength(127).WithMessage("Name cannot be longer than 127 characters");;
+            .NotEmpty().WithMessage("Name cannot be empty");
+            
+        RuleFor(x => x.Name)
+            .MaximumLength(128).WithMessage("Name cannot be more than 128 characters.");
         
     }
 }

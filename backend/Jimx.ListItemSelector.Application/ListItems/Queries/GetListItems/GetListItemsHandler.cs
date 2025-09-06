@@ -1,5 +1,7 @@
 ﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Application.ListItems.Dto;
 using Jimx.ListItemSelector.Application.ListItems.Specifications;
+using Jimx.ListItemSelector.Application.Mapping;
 using Jimx.ListItemSelector.Domain.Common;
 using Jimx.ListItemSelector.Domain.Common.Specifications;
 using Jimx.ListItemSelector.Domain.Entities;
@@ -7,7 +9,7 @@ using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListItems.Queries.GetListItems;
 
-public class GetListItemsHandler : IRequestHandler<GetListItemsQuery, List<ListItem>>
+public class GetListItemsHandler : IRequestHandler<GetListItemsQuery, IReadOnlyCollection<ListItemDto>>
 {
     private readonly IListItemsRepository _repository;
 
@@ -16,27 +18,34 @@ public class GetListItemsHandler : IRequestHandler<GetListItemsQuery, List<ListI
         _repository = repository;
     }
 
-    public async Task<List<ListItem>> Handle(GetListItemsQuery request, CancellationToken cancellationToken)
+    public async Task<IReadOnlyCollection<ListItemDto>> Handle(GetListItemsQuery request, CancellationToken cancellationToken)
     {
-        ISpecification<ListItem>? spec = null;
+        List<ISpecification<ListItem>> specs = [];
+        
+        if (request.CategoryId.HasValue)
+        {
+            specs.Add(new ListItemByCategoryIdSpec(request.CategoryId.Value));
+        }
 
         if (!string.IsNullOrEmpty(request.NameContains))
         {
-            spec = new ListItemByNameContainsSpec(request.NameContains);
+            specs.Add(new ListItemByNameContainsSpec(request.NameContains));
         }
 
         if (!string.IsNullOrEmpty(request.DescriptionContains))
         {
-            var newSpec = new ListItemByDescriptionContainsSpec(request.DescriptionContains);
-
-            spec = spec is null ? newSpec : spec.And(newSpec);
+            specs.Add(new ListItemByDescriptionContainsSpec(request.DescriptionContains));
         }
 
-        if (spec is not null)
+        IReadOnlyCollection<ListItem> domainItems;
+        if (specs.Any())
         {   
-            return await _repository.GetAsync(spec, cancellationToken);
+            domainItems = await _repository.GetAsync(
+                specs.Aggregate((a, b) => a.And(b)), 
+                cancellationToken);
         }
+        domainItems = await _repository.GetAllAsync(cancellationToken);
         
-        return await _repository.GetAllAsync(cancellationToken);
+        return domainItems.Select(i => i.ToDto()).ToList();
     }
 }

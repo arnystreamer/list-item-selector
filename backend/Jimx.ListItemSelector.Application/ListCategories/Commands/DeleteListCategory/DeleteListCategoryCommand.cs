@@ -1,4 +1,4 @@
-﻿using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListCategories.Commands.DeleteListCategory;

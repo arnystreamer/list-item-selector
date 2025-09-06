@@ -1,5 +1,6 @@
-﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
-using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
+using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Domain.Entities;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListItems.Commands.UpdateListItem;
@@ -15,17 +16,13 @@ public class UpdateListItemHandler : IRequestHandler<UpdateListItemCommand, Resu
 
     public async Task<Result> Handle(UpdateListItemCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _repository.GetByIdAsync(request.Id, cancellationToken);
-        if (entity == null)
+        var entity = new ListItem(request.Id, 0, request.Name, request.Description);
+        var result = await _repository.UpdateAsync(entity, cancellationToken);
+        if (!result)
         {
-            return Result.Failure([$"List item with id {request.Id} not found"]);
+            return Result.Fail($"Updating list item with id {request.Id} was unsuccessful");
         }
         
-        entity.Name = request.Name;
-        entity.Description = request.Description;
-        
-        await _repository.UpdateAsync(entity, cancellationToken);
-        
-        return Result.Success();
+        return Result.Ok();
     }
 }

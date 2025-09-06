@@ -1,5 +1,5 @@
-﻿using Jimx.ListItemSelector.Application.Common.Interfaces;
-using Jimx.ListItemSelector.Application.Common.Models;
+﻿using Jimx.Common.Models;
+using Jimx.ListItemSelector.Application.Common.Interfaces;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListCategories.Commands.DeleteListCategory;
@@ -15,14 +15,12 @@ public class DeleteListCategoryHandler : IRequestHandler<DeleteListCategoryComma
 
     public async Task<Result> Handle(DeleteListCategoryCommand request, CancellationToken cancellationToken)
     {
-        var entity = await _repository.GetByIdAsync(request.Id, cancellationToken);
-        if (entity == null)
+        var result = await _repository.DeleteAsync(request.Id, cancellationToken);
+        if (!result)
         {
-            return Result.Failure([$"List category with id {request.Id} not found"]);
+            return Result.Fail($"List category with id {request.Id} not found");
         }
-
-        await _repository.DeleteAsync(entity, cancellationToken);
         
-        return Result.Success();
+        return Result.Ok();
     }
 }
