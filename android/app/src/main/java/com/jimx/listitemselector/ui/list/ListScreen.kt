@@ -1,5 +1,6 @@
 package com.jimx.listitemselector.ui.list
 
+import LoadingLayout
 import android.content.Intent
 import android.content.Context
 import androidx.compose.foundation.Image
@@ -44,6 +45,7 @@ import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jimx.listitemselector.R
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.ui.common.ErrorLayout
 import kotlinx.coroutines.launch
 
 @Composable
@@ -180,12 +182,18 @@ fun ListScreen(
                 modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp)
             )
         },
-        content = { paddingValues -> ListLayout(
-            { listViewModel.choose() },
-            uiState.items,
-            uiState.currentSelectedItemId,
-            Modifier.padding(paddingValues)
-        ) })
+        content = { paddingValues -> when (uiState) {
+            is ListUiState.Loading -> LoadingLayout(modifier = Modifier.padding(paddingValues))
+            is ListUiState.Success -> ListLayout(
+                { listViewModel.choose() },
+                (uiState as ListUiState.Success).items,
+                (uiState as ListUiState.Success).currentSelectedItemId,
+                Modifier.padding(paddingValues)
+            )
+            is ListUiState.Error -> ErrorLayout((uiState as ListUiState.Error).message,
+                Modifier.padding(paddingValues))
+            }
+        })
 }
 
 @Preview(showBackground = true)

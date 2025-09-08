@@ -22,7 +22,7 @@ class CatalogViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val repo: CategoryRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow(CatalogUiState())
+    private val _uiState = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
     val uiState: StateFlow<CatalogUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<CatalogUiEvent>()
@@ -31,30 +31,36 @@ class CatalogViewModel @Inject constructor(
     fun reset() {
         Log.d("CatalogViewModel", "reset")
 
+        _uiState.update {
+            Log.d("CatalogViewModel.reset", "CatalogUiState.Loading")
+            CatalogUiState.Loading
+        }
+
         viewModelScope.launch {
+
             repo.loadCategories()
                 .catch { e ->
+                    Log.e("CatalogViewModel", e.message ?: "Unknown error")
                     _events.emit(CatalogUiEvent.NotifyAboutError(e.message))
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isFinishedWithError = true
-                        )
+                        CatalogUiState.Error(e.message ?: "Unknown error")
                     }
                 }
                 .collect { items ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isFinishedWithError = false,
-                            items = items
-                        )
+                        Log.d("CatalogViewModel.reset", "CatalogUiState.Success")
+                        CatalogUiState.Success(items)
                     }
                 }
         }
 
         viewModelScope.launch {
-            repo.refresh()
+            try {
+                repo.refresh()
+            } catch (e: Exception) {
+                Log.e("CatalogViewModel", e.message ?: "Unknown error")
+                _events.emit(CatalogUiEvent.NotifyAboutError(e.message))
+            }
         }
     }
 

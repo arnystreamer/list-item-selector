@@ -6,7 +6,8 @@ import jakarta.inject.Inject
 class RemoteListDatasourceImpl @Inject constructor() : RemoteListDatasource {
     override suspend fun fetchItems(categoryId: Int): List<ListDto> {
 
-        return ListItemSelectorApi.retrofitService.loadListItems(categoryId).items
+        return ListItemSelectorApi.retrofitService.loadListItems().items
+            .filter { it.categoryId == categoryId }
             .map { ListDto(it.id, it.categoryId, it.name, it.description) }
     }
 }

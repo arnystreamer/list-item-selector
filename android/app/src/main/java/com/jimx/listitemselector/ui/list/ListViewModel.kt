@@ -1,9 +1,11 @@
 package com.jimx.listitemselector.ui.list
 
+import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jimx.listitemselector.data.list.ListRepository
+import com.jimx.listitemselector.model.CategoryData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -26,65 +28,85 @@ class ListViewModel @Inject constructor(
 
     private val categoryId: Int = checkNotNull(savedStateHandle["categoryId"])
 
-    private val _uiState = MutableStateFlow(ListUiState())
+    private val _uiState = MutableStateFlow<ListUiState>(ListUiState.Loading)
     val uiState: StateFlow<ListUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<ListUiEvent>()
     val events: SharedFlow<ListUiEvent> = _events.asSharedFlow()
 
     fun reset() {
+
+        Log.d("ListViewModel", "reset")
+
+        _uiState.update {
+            Log.d("ListViewModel.reset", "ListUiState.Loading")
+            ListUiState.Loading
+        }
+
         viewModelScope.launch {
+
             repo.loadListItems(categoryId)
                 .onStart {
                     _uiState.update {
-                        it.copy(
-                            isLoading = true,
-                            isFinishedWithError = false
-                        )
+                        ListUiState.Loading
                     }
                 }
                 .catch { e ->
+                    Log.e("ListViewModel", e.message ?: "Unknown error")
                     _events.emit(ListUiEvent.NotifyAboutError(e.message))
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isFinishedWithError = true
-                        )
+                        ListUiState.Error(e.message ?: "Unknown error")
+
                     }
                 }
                 .collect { items ->
                     _uiState.update {
-                        it.copy(
-                            isLoading = false,
-                            isFinishedWithError = false,
-                            items = items
-                        )
+                        Log.d("ListViewModel.reset", "ListUiState.Success")
+                        ListUiState.Success(CategoryData(categoryId, ""), items, null)
                     }
                 }
         }
 
         viewModelScope.launch {
-            repo.refresh(categoryId)
+            try {
+                repo.refresh(categoryId)
+            } catch (e: Exception) {
+                Log.e("ListViewModel", e.message ?: "Unknown error")
+                _events.emit(ListUiEvent.NotifyAboutError(e.message))
+            }
         }
     }
 
     fun choose() {
-        val chosenRandomId = getRandomId()
+
+        val currentUiState = _uiState.value;
+
+        if (currentUiState !is ListUiState.Success)
+        {
+            Log.e("ListViewModel.choose", "Unexpected state")
+            viewModelScope.launch {
+                _events.emit(ListUiEvent.NotifyAboutError("Unexpected state"))
+            }
+            return;
+        }
+
+        val chosenRandomId = getRandomId(currentUiState)
         if (chosenRandomId == null)
             return
 
+        val chosenRandomItem = currentUiState.items.first({ it.id == chosenRandomId })
+
         _uiState.update {
-            it.copy(currentSelectedItemId = chosenRandomId)
+            ListUiState.Success(CategoryData(categoryId, ""), currentUiState.items, chosenRandomId)
         }
 
-        val chosenRandomItem = _uiState.value.items.first({ it.id == chosenRandomId })
         viewModelScope.launch {
             _events.emit(ListUiEvent.NotifyAboutSelectedListItem(chosenRandomItem))
         }
     }
 
-    fun getRandomId(): Int? {
-        val currentItems = _uiState.value.items
+    fun getRandomId(uiState: ListUiState.Success): Int? {
+        val currentItems = uiState.items
         if (currentItems.isEmpty())
             return null
 

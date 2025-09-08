@@ -7,8 +7,8 @@ import com.jimx.listitemselector.network.contract.ListItemApi
 import retrofit2.http.Path
 
 interface ListItemSelectorApiService {
-    @GET("/api/list-items/{categoryId}")
-    suspend fun loadListItems(@Path("categoryId") categoryId: Int): CollectionApi<ListItemApi>
+    @GET("/api/list-items")
+    suspend fun loadListItems(): CollectionApi<ListItemApi>
 
     @GET("/api/list-categories")
     suspend fun loadCategories() : CollectionApi<ListCategoryApi>

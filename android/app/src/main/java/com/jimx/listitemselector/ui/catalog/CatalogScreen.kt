@@ -1,5 +1,6 @@
 package com.jimx.listitemselector.ui.catalog
 
+import LoadingLayout
 import android.util.Log
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
@@ -28,6 +29,7 @@ import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jimx.listitemselector.R
 import com.jimx.listitemselector.model.CategoryData
+import com.jimx.listitemselector.ui.common.ErrorLayout
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
 @Composable
@@ -52,13 +54,14 @@ fun ItemsList(items: List<CategoryData>, onItemClick: (item: CategoryData) -> Un
 @Composable
 fun CatalogLayout(
     items: List<CategoryData>,
-    onItemClick: (item: CategoryData) -> Unit
+    onItemClick: (item: CategoryData) -> Unit,
+    modifier: Modifier = Modifier
 )
 {
     val image = painterResource(R.drawable.bg_compose_background)
     val title = stringResource(R.string.category_title_text)
 
-    Box {
+    Box(modifier = modifier) {
         Column {
             Image(
                 painter = image,
@@ -81,12 +84,23 @@ fun CatalogLayout(
 @Composable
 fun CatalogScreen(
     onCatalogItemClick: (item: CategoryData) -> Unit,
+    modifier: Modifier = Modifier,
     catalogViewModel: CatalogViewModel = viewModel()
 ) {
     val uiState by catalogViewModel.uiState.collectAsState()
     Log.d("CatalogScreen", "uiState: $uiState")
 
-    CatalogLayout(uiState.items, { onCatalogItemClick(it) })
+    when (uiState) {
+        is CatalogUiState.Loading -> LoadingLayout(modifier = modifier.fillMaxSize())
+        is CatalogUiState.Success -> CatalogLayout(
+            (uiState as CatalogUiState.Success).items,
+            { onCatalogItemClick(it) },
+            modifier = modifier.fillMaxSize()
+        )
+        is CatalogUiState.Error -> ErrorLayout(
+            (uiState as CatalogUiState.Error).message,
+            modifier = modifier.fillMaxSize())
+    }
 }
 
 @Preview(showBackground = true)
