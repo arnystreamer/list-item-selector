@@ -5,6 +5,7 @@
         <Nullable>enable</Nullable>
         <ImplicitUsings>enable</ImplicitUsings>
         <UserSecretsId>f93209eb-8c8e-4a08-8996-22a4aef926e8</UserSecretsId>
+        <DockerDefaultTargetOS>Linux</DockerDefaultTargetOS>
     </PropertyGroup>
 
     <ItemGroup>
@@ -21,6 +22,12 @@
     <ItemGroup>
       <ProjectReference Include="..\Jimx.ListItemSelector.Application\Jimx.ListItemSelector.Application.csproj" />
       <ProjectReference Include="..\Jimx.ListItemSelector.Infrastructure\Jimx.ListItemSelector.Infrastructure.csproj" />
+    </ItemGroup>
+
+    <ItemGroup>
+      <Content Include="..\.dockerignore">
+        <Link>.dockerignore</Link>
+      </Content>
     </ItemGroup>
 
 </Project>
