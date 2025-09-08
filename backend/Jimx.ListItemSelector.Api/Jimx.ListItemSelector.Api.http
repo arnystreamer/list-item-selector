@@ -1,0 +1,6 @@
+@Jimx.ListItemSelector.Api_HostAddress = http://localhost:5050
+
+GET {{Jimx.ListItemSelector.Api_HostAddress}}/weatherforecast/
+Accept: application/json
+
+###
