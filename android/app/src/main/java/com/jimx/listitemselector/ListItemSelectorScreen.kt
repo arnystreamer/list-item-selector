@@ -110,7 +110,9 @@ fun ListItemSelectorApp(
                     val vm: CatalogViewModel = hiltViewModel(backStackEntry)
                     CatalogScreen({ catalog ->
                         navController.navigate("${ListItemSelectorScreen.List.name}/${catalog.id}")
-                    },  vm)
+                    },
+                        Modifier,
+                        vm)
                 }
                 composable(
                     route = ListItemSelectorScreen.List.name + "/{categoryId}",

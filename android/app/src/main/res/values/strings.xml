@@ -4,4 +4,6 @@
     <string name="list_title_text">List items</string>
     <string name="back_button">Back</string>
     <string name="share_title">New list item was chosen!</string>
+    <string name="loading">Loading…</string>
+    <string name="loading_failed">Loading failed</string>
 </resources>
