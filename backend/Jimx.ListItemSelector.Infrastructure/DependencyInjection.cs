@@ -9,12 +9,13 @@ namespace Jimx.ListItemSelector.Infrastructure;
 
 public static class DependencyInjection
 {
-    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config)
+    public static IServiceCollection AddInfrastructure(this IServiceCollection services, IConfiguration config, 
+        Func<DbContextOptionsBuilder, IConfiguration, DbContextOptionsBuilder> dbContextOptionsBuilderFunc)
     {
         var connectionString = config.GetConnectionString("DefaultConnection");
 
         services.AddDbContext<AppDbContext>(options =>
-            options.UseNpgsql(connectionString));
+            dbContextOptionsBuilderFunc(options.UseNpgsql(connectionString), config));
 
         services.AddScoped<IListCategoriesRepository, ListCategoriesRepository>();
         services.AddScoped<IListItemsRepository, ListItemsRepository>();

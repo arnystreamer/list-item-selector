@@ -44,8 +44,11 @@ public class GetListItemsHandler : IRequestHandler<GetListItemsQuery, IReadOnlyC
                 specs.Aggregate((a, b) => a.And(b)), 
                 cancellationToken);
         }
-        domainItems = await _repository.GetAllAsync(cancellationToken);
-        
+        else
+        {
+            domainItems = await _repository.GetAllAsync(cancellationToken);
+        }
+
         return domainItems.Select(i => i.ToDto()).ToList();
     }
 }

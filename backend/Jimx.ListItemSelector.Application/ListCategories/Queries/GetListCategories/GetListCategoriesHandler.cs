@@ -31,8 +31,11 @@ public class GetListCategoriesHandler : IRequestHandler<GetListCategoriesQuery, 
         {
             domainItems = await _repository.GetAsync(spec, cancellationToken);
         }
-        domainItems = await _repository.GetAllAsync(cancellationToken);
-
+        else
+        {
+            domainItems = await _repository.GetAllAsync(cancellationToken);            
+        }
+        
         return domainItems.Select(i => i.ToDto()).ToList();
     }
 }
