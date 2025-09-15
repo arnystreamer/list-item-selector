@@ -13,8 +13,12 @@ public class AndSpecification<T> : ISpecification<T>
         _right = right;
     }
 
-    public Expression<Func<T, bool>> Criteria => Expression.Lambda<Func<T, bool>>(
-        Expression.AndAlso(
-            Expression.Invoke(_left.Criteria, Expression.Parameter(typeof(T))),
-            Expression.Invoke(_right.Criteria, Expression.Parameter(typeof(T)))));
+    public Expression<Func<T, bool>> Criteria {
+        get
+        {
+            var appendResult = _left.Criteria.BinaryAppend(_right.Criteria, ExpressionType.AndAlso);
+            return Expression.Lambda<Func<T, bool>>(appendResult.Expression, appendResult.Parameter);
+        }
+    }
+
 }

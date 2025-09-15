@@ -1,4 +1,5 @@
 using Jimx.ListItemSelector.Domain.Common;
+using Jimx.ListItemSelector.Domain.Common.Specifications;
 using Jimx.ListItemSelector.Domain.Entities;
 using Jimx.ListItemSelector.Infrastructure.Persistence.Models;
 
@@ -18,9 +19,8 @@ public static class ListItemMapper
             Description = domain.Description
         };
 
-    public static ISpecification<ListItemEntity> ToEntitySpecification(
-        this ISpecification<ListItem> specification)
+    public static ISpecification<ListItemEntity> ToEntitySpecification(this ISpecification<ListItem> specification)
     {
-        throw new NotImplementedException();
+        return new DomainToEntitySpecification<ListItem, ListItemEntity>(specification);
     }
 }

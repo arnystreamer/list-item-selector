@@ -1,5 +1,5 @@
-﻿using System.Linq.Expressions;
-using Jimx.ListItemSelector.Domain.Common;
+﻿using Jimx.ListItemSelector.Domain.Common;
+using Jimx.ListItemSelector.Domain.Common.Specifications;
 using Jimx.ListItemSelector.Domain.Entities;
 using Jimx.ListItemSelector.Infrastructure.Persistence.Models;
 
@@ -17,9 +17,8 @@ public static class ListCategoryMapper
             Name = domain.Name
         };
 
-    public static ISpecification<ListCategoryEntity> ToEntitySpecification(
-        this ISpecification<ListCategory> specification)
+    public static ISpecification<ListCategoryEntity> ToEntitySpecification(this ISpecification<ListCategory> specification)
     {
-        throw new NotImplementedException();
+        return new DomainToEntitySpecification<ListCategory, ListCategoryEntity>(specification);
     }
 }
