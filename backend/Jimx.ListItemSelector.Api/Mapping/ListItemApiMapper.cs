@@ -5,6 +5,6 @@ namespace Jimx.ListItemSelector.Api.Mapping;
 
 public static class ListItemApiMapper
 {
-    public static ListItemApi ToApi(this ListItemDto dto) => new(dto.Id, dto.CategoryId, dto.Name, dto.Description);
+    public static ListItemApi ToApi(this ListItemDto dto) => new(dto.Id, dto.CategoryId, dto.Name, dto.Description, dto.IsExcluded);
 
 }

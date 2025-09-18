@@ -1,9 +1,9 @@
 package com.jimx.listitemselector.model
 
-
 data class ItemData(
     val id: Int,
     val name: String,
-    val description: String? = null
+    val description: String?,
+    val isExcluded: Boolean
 )
 

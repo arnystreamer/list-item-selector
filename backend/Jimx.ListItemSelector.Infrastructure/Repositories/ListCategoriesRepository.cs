@@ -17,14 +17,14 @@ public class ListCategoriesRepository : IListCategoriesRepository
         _context = context;
     }
 
-    public async Task<int> AddAsync(ListCategory listCategory, CancellationToken cancellationToken)
+    public async Task<ListCategory> AddAsync(ListCategory listCategory, CancellationToken cancellationToken)
     {
         var entity = listCategory.ToEntity();
         entity.UpdatedAt = DateTime.UtcNow;
         
         var entry = _context.ListCategories.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
-        return entry.Entity.Id;
+        return entry.Entity.ToDomain();
     }
 
     public async Task<ListCategory?> GetByIdAsync(int id, CancellationToken cancellationToken)
@@ -47,22 +47,22 @@ public class ListCategoriesRepository : IListCategoriesRepository
         return await _context.ListCategories.AsNoTracking().Select(c => c.ToDomain()).ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> UpdateAsync(ListCategory listCategory, CancellationToken cancellationToken)
+    public async Task<ListCategory?> UpdateAsync(ListCategory listCategory, CancellationToken cancellationToken)
     {
         var incomingEntity = listCategory.ToEntity();
         var entity = await _context.ListCategories.FindAsync([incomingEntity.Id], cancellationToken);
         if (entity == null)
         {
-            return false;
+            return null;
         }
         
         entity.Name = incomingEntity.Name;
         entity.UpdatedAt = DateTime.UtcNow;
         
-        _context.ListCategories.Update(entity);
+        var entry = _context.ListCategories.Update(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return entry.Entity.ToDomain();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)

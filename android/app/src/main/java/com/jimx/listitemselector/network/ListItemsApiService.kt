@@ -1,7 +1,6 @@
 package com.jimx.listitemselector.network
 
 import com.jimx.listitemselector.network.contract.CollectionApi
-import com.jimx.listitemselector.network.contract.IdentityApi
 import com.jimx.listitemselector.network.contract.ItemApi
 import com.jimx.listitemselector.network.contract.listitem.ListItemApi
 import com.jimx.listitemselector.network.contract.listitem.ListItemCreateApi
@@ -20,10 +19,10 @@ interface ListItemsApiService {
     suspend fun getListItem(@Path("id") id: Int) : ItemApi<ListItemApi>
 
     @POST("/api/list-items")
-    suspend fun postListItem(@Body category: ListItemCreateApi) : IdentityApi
+    suspend fun postListItem(@Body category: ListItemCreateApi) : ItemApi<ListItemApi>
 
     @PUT("/api/list-items/{id}")
-    suspend fun putListItem(@Path("id") id: Int, @Body category: ListItemApi)
+    suspend fun putListItem(@Path("id") id: Int, @Body category: ListItemApi): ItemApi<ListItemApi>
 
     @DELETE("/api/list-items/{id}")
     suspend fun deleteListItem(@Path("id") id: Int)

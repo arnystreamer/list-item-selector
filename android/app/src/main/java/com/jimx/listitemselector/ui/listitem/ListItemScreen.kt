@@ -212,7 +212,8 @@ fun ListItemScreenPreview() {
                 ItemData(
                     1,
                     "Nam ut gravida quam",
-                    "Praesent ut dignissim lectus. Suspendisse gravida sapien tincidunt dignissim blandit. Praesent aliquet massa at tincidunt suscipit. Nunc condimentum nisl at dolor porta ullamcorper. In pretium pellentesque aliquam"
+                    "Praesent ut dignissim lectus. Suspendisse gravida sapien tincidunt dignissim blandit. Praesent aliquet massa at tincidunt suscipit. Nunc condimentum nisl at dolor porta ullamcorper. In pretium pellentesque aliquam",
+                    false
                 )
             )
         }

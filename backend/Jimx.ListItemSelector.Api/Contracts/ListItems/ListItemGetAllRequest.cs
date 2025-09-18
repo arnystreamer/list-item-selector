@@ -5,4 +5,6 @@ public class ListItemGetAllRequest
     public int? CategoryId { get; init; }
     public string? Name { get; init; }
     public string? Description { get; init; }
+    public bool? IsExcluded { get; init; }
+    
 }

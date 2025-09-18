@@ -6,5 +6,6 @@ import kotlinx.serialization.Serializable
 data class ListItemCreateApi(
     val categoryId: Int,
     val name: String,
-    val description: String? = null
+    val description: String?,
+    val isExcluded: Boolean
 )

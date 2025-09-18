@@ -5,4 +5,5 @@ public class ListItemCreateRequest
     public required int CategoryId { get; init; } 
     public required string Name { get; init; } 
     public string? Description { get; init; }
+    public bool IsExcluded { get; init; }
 }

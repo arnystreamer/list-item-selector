@@ -219,16 +219,16 @@ fun ListScreenPreview() {
             color = MaterialTheme.colorScheme.background
         ) {
             val items =  listOf(
-                ItemData(1, "Orci varius", "Sed vulputate eros at nibh dignissim, non scelerisque nulla auctor"),
-                ItemData(2, "Phasellus accumsan ut metus eget laoreet interdum quam", "Proin at sapien vitae purus mollis facilisis"),
-                ItemData(3, "Nulla blandit lorem", "Donec efficitur lectus nisl"),
-                ItemData(4, "Cras non mi eu ipsum", "Vestibulum laoreet sem tristique tellus congue vulputate"),
-                ItemData(5, "Quisque facilisis arcu et libero", "Fusce eros est, elementum eu sem vel, semper accumsan nulla"),
-                ItemData(6, "Praesent ut dignissim lectus", "Fusce leo nulla, faucibus varius rutrum vitae"),
-                ItemData(7, "Aliquam at enim nibh", "Mauris pharetra pulvinar neque"),
-                ItemData(8, "Integer eleifend ligula eu quam vehicula porttitor", "Aenean porttitor urna eget consectetur ultricies"),
-                ItemData(9, "Nullam ac metus sed tortor commodo ", "Praesent auctor a justo sed faucibus"),
-                ItemData(10, "Proin suscipit risus nec diam", "Fusce eros est, elementum eu sem vel, semper accumsan nulla"),
+                ItemData(1, "Orci varius", "Sed vulputate eros at nibh dignissim, non scelerisque nulla auctor", false),
+                ItemData(2, "Phasellus accumsan ut metus eget laoreet interdum quam", "Proin at sapien vitae purus mollis facilisis", false),
+                ItemData(3, "Nulla blandit lorem", "Donec efficitur lectus nisl", false),
+                ItemData(4, "Cras non mi eu ipsum", "Vestibulum laoreet sem tristique tellus congue vulputate", false),
+                ItemData(5, "Quisque facilisis arcu et libero", "Fusce eros est, elementum eu sem vel, semper accumsan nulla", true),
+                ItemData(6, "Praesent ut dignissim lectus", "Fusce leo nulla, faucibus varius rutrum vitae", false),
+                ItemData(7, "Aliquam at enim nibh", "Mauris pharetra pulvinar neque", false),
+                ItemData(8, "Integer eleifend ligula eu quam vehicula porttitor", "Aenean porttitor urna eget consectetur ultricies", false),
+                ItemData(9, "Nullam ac metus sed tortor commodo ", "Praesent auctor a justo sed faucibus", true),
+                ItemData(10, "Proin suscipit risus nec diam", "Fusce eros est, elementum eu sem vel, semper accumsan nulla", false),
             )
 
             Scaffold(

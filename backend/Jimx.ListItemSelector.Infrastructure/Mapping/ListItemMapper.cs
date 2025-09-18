@@ -8,7 +8,7 @@ namespace Jimx.ListItemSelector.Infrastructure.Mapping;
 public static class ListItemMapper
 {
     public static ListItem ToDomain(this ListItemEntity entity) => 
-        new ListItem(entity.Id, entity.CategoryId, entity.Name, entity.Description);
+        new ListItem(entity.Id, entity.CategoryId, entity.Name, entity.Description, entity.IsExcluded);
 
     public static ListItemEntity ToEntity(this ListItem domain) =>
         new ListItemEntity
@@ -16,7 +16,8 @@ public static class ListItemMapper
             Id = domain.Id,
             CategoryId = domain.CategoryId,
             Name = domain.Name,
-            Description = domain.Description
+            Description = domain.Description,
+            IsExcluded = domain.IsExcluded
         };
 
     public static ISpecification<ListItemEntity> ToEntitySpecification(this ISpecification<ListItem> specification)

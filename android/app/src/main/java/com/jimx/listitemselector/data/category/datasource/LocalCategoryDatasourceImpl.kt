@@ -1,7 +1,7 @@
 package com.jimx.listitemselector.data.category.datasource
 
 import android.util.Log
-import com.jimx.listitemselector.model.CategoryData
+import com.jimx.listitemselector.data.category.mapping.toDto
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -9,13 +9,13 @@ import kotlinx.coroutines.flow.update
 
 class LocalCategoryDatasourceImpl @Inject constructor() : LocalCategoryDatasource {
 
-    private val items = MutableStateFlow<List<CategoryData>>(emptyList())
+    private val items = MutableStateFlow<List<CategoryDto>>(emptyList())
 
-    override fun observeItems(): Flow<List<CategoryData>> = items
+    override fun observeItems(): Flow<List<CategoryDto>> = items
 
     override suspend fun appendItem(item: CategoryEntity) {
         Log.d("LocalCategoryDatasourceImpl", "appendItem: $item")
-        items.update { it + CategoryData(item.id, item.name) }
+        items.update { it + item.toDto() }
     }
 
     override suspend fun updateItem(
@@ -26,7 +26,7 @@ class LocalCategoryDatasourceImpl @Inject constructor() : LocalCategoryDatasourc
             throw IllegalArgumentException("itemId and item.id must be equal")
 
         Log.d("LocalCategoryDatasourceImpl", "updateItem: $item")
-        items.update { it.map { i -> if (i.id == itemId) CategoryData(item.id, item.name) else i } }
+        items.update { it.map { i -> if (i.id == itemId) item.toDto() else i } }
     }
 
     override suspend fun deleteItem(itemId: Int) {
@@ -37,6 +37,6 @@ class LocalCategoryDatasourceImpl @Inject constructor() : LocalCategoryDatasourc
 
     override suspend fun replaceItems(newItems: List<CategoryEntity>) {
         Log.d("LocalCategoryDatasourceImpl", "replaceItems")
-        items.update { newItems.map { CategoryData(it.id, it.name) } }
+        items.update { newItems.map { it.toDto() } }
     }
 }

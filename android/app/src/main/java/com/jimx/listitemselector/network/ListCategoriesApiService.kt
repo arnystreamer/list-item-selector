@@ -1,7 +1,6 @@
 package com.jimx.listitemselector.network
 
 import com.jimx.listitemselector.network.contract.CollectionApi
-import com.jimx.listitemselector.network.contract.IdentityApi
 import com.jimx.listitemselector.network.contract.ItemApi
 import retrofit2.http.GET
 import com.jimx.listitemselector.network.contract.listcategory.ListCategoryApi
@@ -20,10 +19,10 @@ interface ListCategoriesApiService {
     suspend fun getCategory(@Path("id") id: Int): ItemApi<ListCategoryApi>
 
     @POST("/api/list-categories")
-    suspend fun postCategory(@Body category: ListCategoryCreateApi): IdentityApi
+    suspend fun postCategory(@Body category: ListCategoryCreateApi): ItemApi<ListCategoryApi>
 
     @PUT("/api/list-categories/{id}")
-    suspend fun putCategory(@Path("id") id: Int, @Body category: ListCategoryApi)
+    suspend fun putCategory(@Path("id") id: Int, @Body category: ListCategoryApi): ItemApi<ListCategoryApi>
 
     @DELETE("/api/list-categories/{id}")
     suspend fun deleteCategory(@Path("id") id: Int)
