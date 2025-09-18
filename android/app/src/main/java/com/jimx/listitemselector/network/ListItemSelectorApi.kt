@@ -14,6 +14,9 @@ private val retrofit = Retrofit.Builder()
     .build()
 
 object ListItemSelectorApi {
-    val retrofitService : ListItemSelectorApiService by lazy {
-        retrofit.create(ListItemSelectorApiService::class.java) }
+    val listCategoriesRetrofitService : ListCategoriesApiService by lazy {
+        retrofit.create(ListCategoriesApiService::class.java) }
+
+    val listItemsRetrofitService : ListItemsApiService by lazy {
+        retrofit.create(ListItemsApiService::class.java) }
 }

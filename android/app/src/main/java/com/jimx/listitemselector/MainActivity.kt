@@ -12,9 +12,7 @@ import androidx.compose.foundation.layout.calculateStartPadding
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawing
-import androidx.compose.foundation.layout.statusBarsPadding
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.material3.Scaffold
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalLayoutDirection
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
@@ -34,17 +32,15 @@ class MainActivity : ComponentActivity() {
             ListItemSelectorTheme {
                 val layoutDirection = LocalLayoutDirection.current
 
-                Surface(
+                Scaffold (
                     modifier = Modifier
                         .fillMaxSize()
-                        .statusBarsPadding()
                         .padding(start = WindowInsets.safeDrawing.asPaddingValues()
                             .calculateStartPadding(layoutDirection),
                             end = WindowInsets.safeDrawing.asPaddingValues()
-                                .calculateEndPadding(layoutDirection)),
-                    color = MaterialTheme.colorScheme.background
-                ) {
-                    ListItemSelectorApp()
+                                .calculateEndPadding(layoutDirection))
+                ) { innerPadding ->
+                    ListItemSelectorApp(Modifier.padding(innerPadding))
                 }
             }
         }

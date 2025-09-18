@@ -4,6 +4,7 @@ import LoadingLayout
 import android.content.Intent
 import android.content.Context
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -49,17 +50,20 @@ import com.jimx.listitemselector.ui.common.ErrorLayout
 import kotlinx.coroutines.launch
 
 @Composable
-fun ItemsList(selectedId: Int?, items: List<ItemData>, modifier: Modifier = Modifier) {
+fun ItemsList(selectedId: Int?, items: List<ItemData>, onItemClick: (ItemData) -> Unit,
+              modifier: Modifier = Modifier) {
     LazyColumn(modifier = modifier) {
         items(items) { item ->
-            ListItemLine(item,
-                isChosen = item.id == selectedId)
+            ListItemLine(
+                item,
+                isChosen = item.id == selectedId,
+                onItemClick)
         }
     }
 }
 
 @Composable
-fun ListItemLine(item: ItemData, isChosen: Boolean) {
+fun ListItemLine(item: ItemData, isChosen: Boolean, onItemClick: (ItemData) -> Unit) {
     ListItem(
         headlineContent = { Text(item.name) },
         supportingContent = {
@@ -74,6 +78,9 @@ fun ListItemLine(item: ItemData, isChosen: Boolean) {
                     modifier = Modifier.padding(8.dp)
                 )
             }
+        },
+        modifier = Modifier.clickable {
+            onItemClick(item)
         }
     )
     HorizontalDivider()
@@ -82,7 +89,9 @@ fun ListItemLine(item: ItemData, isChosen: Boolean) {
 @Composable
 fun ListLayout(
     onChooseListItemClick: () -> Unit,
+    onAddClick: () -> Unit,
     items: List<ItemData>,
+    onItemClick: (ItemData) -> Unit,
     selectedId: Int?,
     modifier: Modifier = Modifier
 ) {
@@ -104,29 +113,28 @@ fun ListLayout(
                 lineHeight = 24.sp,
                 modifier = Modifier.padding(16.dp)
             )
-            ItemsList(selectedId, items)
+            ItemsList(selectedId, items, onItemClick)
         }
     }
 
     Box(modifier = modifier.fillMaxSize())
     {
-        if (false) {
-            FloatingActionButton(
-                onClick = { },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            )
-            {
-                Icon(Icons.Filled.Add, "Add")
-            }
+        FloatingActionButton(
+            onClick = onAddClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
+        {
+            Icon(Icons.Filled.Add, "Add")
         }
 
         FloatingActionButton(
             onClick = onChooseListItemClick,
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
+                .align(Alignment.BottomEnd)
+                .padding(16.dp, 16.dp, 102.dp, 16.dp)
+
         )
         {
             Icon(Icons.Filled.PlayArrow, "Choose")
@@ -136,6 +144,9 @@ fun ListLayout(
 
 @Composable
 fun ListScreen(
+    onAddClick: () -> Unit,
+    onListItemClick: (item: ItemData) -> Unit,
+    modifier: Modifier = Modifier,
     listViewModel: ListViewModel = viewModel()
 )
 {
@@ -183,12 +194,14 @@ fun ListScreen(
             )
         },
         content = { paddingValues -> when (uiState) {
-            is ListUiState.Loading -> LoadingLayout(modifier = Modifier.padding(paddingValues))
+            is ListUiState.Loading -> LoadingLayout(modifier = modifier.padding(paddingValues))
             is ListUiState.Success -> ListLayout(
                 { listViewModel.choose() },
+                onAddClick,
                 (uiState as ListUiState.Success).items,
+                onListItemClick,
                 (uiState as ListUiState.Success).currentSelectedItemId,
-                Modifier.padding(paddingValues)
+                modifier.padding(paddingValues)
             )
             is ListUiState.Error -> ErrorLayout((uiState as ListUiState.Error).message,
                 Modifier.padding(paddingValues))
@@ -205,7 +218,29 @@ fun ListScreenPreview() {
                 .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            ListScreen()
+            val items =  listOf(
+                ItemData(1, "Orci varius", "Sed vulputate eros at nibh dignissim, non scelerisque nulla auctor"),
+                ItemData(2, "Phasellus accumsan ut metus eget laoreet interdum quam", "Proin at sapien vitae purus mollis facilisis"),
+                ItemData(3, "Nulla blandit lorem", "Donec efficitur lectus nisl"),
+                ItemData(4, "Cras non mi eu ipsum", "Vestibulum laoreet sem tristique tellus congue vulputate"),
+                ItemData(5, "Quisque facilisis arcu et libero", "Fusce eros est, elementum eu sem vel, semper accumsan nulla"),
+                ItemData(6, "Praesent ut dignissim lectus", "Fusce leo nulla, faucibus varius rutrum vitae"),
+                ItemData(7, "Aliquam at enim nibh", "Mauris pharetra pulvinar neque"),
+                ItemData(8, "Integer eleifend ligula eu quam vehicula porttitor", "Aenean porttitor urna eget consectetur ultricies"),
+                ItemData(9, "Nullam ac metus sed tortor commodo ", "Praesent auctor a justo sed faucibus"),
+                ItemData(10, "Proin suscipit risus nec diam", "Fusce eros est, elementum eu sem vel, semper accumsan nulla"),
+            )
+
+            Scaffold(
+                content = { paddingValues ->
+                    ListLayout({},
+                        {},
+                        items,
+                        {},
+                        null,
+                        Modifier.padding(paddingValues))
+                }
+            )
         }
     }
 }

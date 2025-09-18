@@ -30,38 +30,65 @@ import com.jimx.listitemselector.ui.catalog.CatalogScreen
 import com.jimx.listitemselector.ui.catalog.CatalogViewModel
 import com.jimx.listitemselector.ui.list.ListScreen
 import com.jimx.listitemselector.ui.list.ListViewModel
+import com.jimx.listitemselector.ui.listitem.ListItemScreen
+import com.jimx.listitemselector.ui.listitem.ListItemViewModel
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
-enum class ListItemSelectorScreen()
+enum class ApplicationScreen()
 {
     Catalog,
-    List
+    List,
+    ListItem
 }
 
-fun getNameByScreen(screen: ListItemSelectorScreen) : String {
+fun getNameByScreen(screen: ApplicationScreen) : String {
     return when (screen) {
-        ListItemSelectorScreen.Catalog -> "Catalog"
-        ListItemSelectorScreen.List -> "List"
+        ApplicationScreen.Catalog -> "Catalog"
+        ApplicationScreen.List -> "List"
+        ApplicationScreen.ListItem -> "List Item"
     }
 }
 
-fun getScreenByRoute(route: String?) : ListItemSelectorScreen {
+fun getScreenByRoute(route: String?) : ApplicationScreen {
     if (route == null)
-        return ListItemSelectorScreen.Catalog
+        return ApplicationScreen.Catalog
 
-    if (route.startsWith(ListItemSelectorScreen.Catalog.name))
-        return ListItemSelectorScreen.Catalog
+    if (!route.startsWith(ApplicationScreen.Catalog.name)) {
+        throw Exception("Invalid route: $route")
+    }
 
-    if (route.startsWith(ListItemSelectorScreen.List.name))
-        return ListItemSelectorScreen.List
+    val subroute = route.substringAfter(ApplicationScreen.Catalog.name, "")
+    if (!subroute.contains(ApplicationScreen.List.name)) {
+        return ApplicationScreen.Catalog
+    }
 
-    return ListItemSelectorScreen.Catalog
+    if (!subroute.contains(ApplicationScreen.ListItem.name)) {
+        return ApplicationScreen.List
+    }
+
+    return ApplicationScreen.ListItem
+}
+
+fun buildRoute(categoryId: Int?, listItemId: Int?) : String {
+    if (listItemId == null) {
+        if (categoryId == null) {
+            return ApplicationScreen.Catalog.name
+        } else {
+            return "${ApplicationScreen.Catalog.name}/${categoryId}/${ApplicationScreen.List.name}"
+        }
+    } else {
+        if (categoryId == null) {
+            throw Exception("categoryId is null, but listItemId is specified")
+        }
+
+        return "${ApplicationScreen.Catalog.name}/${categoryId}/${ApplicationScreen.List.name}/${listItemId}/${ApplicationScreen.ListItem.name}"
+    }
 }
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun ListItemSelectorAppBar(
-        currentScreen: ListItemSelectorScreen,
+        currentScreen: ApplicationScreen,
         canNavigateBack: Boolean,
         navigateUp: () -> Unit,
         modifier: Modifier = Modifier) {
@@ -87,6 +114,7 @@ fun ListItemSelectorAppBar(
 
 @Composable
 fun ListItemSelectorApp(
+    modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
@@ -103,23 +131,47 @@ fun ListItemSelectorApp(
     ) { innerPadding ->
         NavHost(
             navController,
-            startDestination = ListItemSelectorScreen.Catalog.name,
+            startDestination = buildRoute(null, null),
             modifier = Modifier.padding(innerPadding)) {
-                composable(route = ListItemSelectorScreen.Catalog.name
+                composable(route = buildRoute(null, null)
                 ) { backStackEntry ->
                     val vm: CatalogViewModel = hiltViewModel(backStackEntry)
-                    CatalogScreen({ catalog ->
-                        navController.navigate("${ListItemSelectorScreen.List.name}/${catalog.id}")
-                    },
-                        Modifier,
+                    CatalogScreen(
+                        { catalog ->
+                            navController.navigate(buildRoute(catalog.id, null))
+                        },
+                        modifier,
                         vm)
                 }
                 composable(
-                    route = ListItemSelectorScreen.List.name + "/{categoryId}",
+                    route = "${ApplicationScreen.Catalog.name}/{categoryId}/${ApplicationScreen.List.name}",
                     arguments = listOf(navArgument("categoryId") { type = NavType.IntType })
-                    ) { backStackEntry ->
-                        val vm: ListViewModel = hiltViewModel(backStackEntry)
-                        ListScreen(vm)
+                ) { backStackEntry ->
+                    val categoryId = backStackEntry.arguments?.getInt("categoryId")
+                    if (categoryId == null) {
+                        throw Exception("categoryId is null")
+                    }
+
+                    val vm: ListViewModel = hiltViewModel(backStackEntry)
+                    ListScreen(
+                        {},
+                        { item ->
+                            navController.navigate(buildRoute(categoryId, item.id))
+                        },
+                        modifier,
+                        vm
+                    )
+                }
+                composable(
+                    route = "${ApplicationScreen.Catalog.name}/{categoryId}/${ApplicationScreen.List.name}/{itemId}/${ApplicationScreen.ListItem.name}",
+                    arguments = listOf(
+                        navArgument("categoryId") { type = NavType.IntType },
+                        navArgument("itemId") { type = NavType.IntType })
+                ) { backStackEntry ->
+                    val vm: ListItemViewModel = hiltViewModel(backStackEntry)
+                    ListItemScreen(
+                        modifier,
+                        vm)
                 }
         }
     }

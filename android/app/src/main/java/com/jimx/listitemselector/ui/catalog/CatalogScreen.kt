@@ -112,7 +112,11 @@ fun CatalogScreenPreview() {
                 .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            CatalogScreen(onCatalogItemClick = { x -> {} })
+            val items =  listOf(
+                CategoryData(1, "Top Category"),
+                CategoryData(2, "Bottom Category")
+            )
+            CatalogLayout(items, {})
         }
     }
 }

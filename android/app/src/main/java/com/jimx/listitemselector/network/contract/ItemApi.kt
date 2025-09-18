@@ -3,8 +3,5 @@ package com.jimx.listitemselector.network.contract
 import kotlinx.serialization.Serializable
 
 @Serializable
-data class ListCategoryApi(
-    val id: Int,
-    val name: String
-)
+data class ItemApi<T> (val item: T)
 
