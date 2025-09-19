@@ -38,13 +38,17 @@ public class ListItemsRepository : IListItemsRepository
         var entitySpecification = domainSpecification.ToEntitySpecification();
         var query = SpecificationEvaluator.GetQuery(_context.ListItems, entitySpecification);
         return await query.AsNoTracking()
+            .OrderBy(c => new { c.IsExcluded, c.Name })
             .Select(i => i.ToDomain())
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<ListItem>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _context.ListItems.AsNoTracking().Select(i => i.ToDomain()).ToListAsync(cancellationToken);
+        return await _context.ListItems.AsNoTracking()
+            .OrderBy(c => new { c.IsExcluded, c.Name })
+            .Select(i => i.ToDomain())
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<ListItem?> UpdateAsync(ListItem listItem, CancellationToken cancellationToken)

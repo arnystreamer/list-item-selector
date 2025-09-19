@@ -38,13 +38,17 @@ public class ListCategoriesRepository : IListCategoriesRepository
         var entitySpecification = domainSpecification.ToEntitySpecification();
         var query = SpecificationEvaluator.GetQuery(_context.ListCategories, entitySpecification);
         return await query.AsNoTracking()
+            .OrderBy(c => c.Name)
             .Select(c => c.ToDomain())
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<ListCategory>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _context.ListCategories.AsNoTracking().Select(c => c.ToDomain()).ToListAsync(cancellationToken);
+        return await _context.ListCategories.AsNoTracking()
+            .OrderBy(c => c.Name)
+            .Select(c => c.ToDomain())
+            .ToListAsync(cancellationToken);
     }
 
     public async Task<ListCategory?> UpdateAsync(ListCategory listCategory, CancellationToken cancellationToken)
