@@ -1,9 +1,10 @@
 package com.jimx.listitemselector.ui.listitem
 
 import LoadingLayout
-import android.util.Log
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -29,18 +30,22 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
-import com.jimx.listitemselector.model.ItemData
-import com.jimx.listitemselector.ui.common.ErrorLayout
-import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 import com.jimx.listitemselector.R
+import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.services.LocalNavController
+import com.jimx.listitemselector.services.LocalSnackbarManager
+import com.jimx.listitemselector.ui.common.ErrorLayout
+import com.jimx.listitemselector.ui.common.ListAddLayout
+import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
 @Composable
 fun DeleteConfirmationDialog(
@@ -86,58 +91,117 @@ fun DeleteConfirmationDialog(
 }
 
 @Composable
+fun FinishConfirmationDialog(
+    onDismissRequest: () -> Unit,
+    onConfirmation: () -> Unit,
+    isDisabled: Boolean,
+    data: ItemData)
+{
+    Dialog(onDismissRequest = { onDismissRequest() })
+    {
+        Card(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(16.dp),
+            shape = RoundedCornerShape(16.dp),
+        ) {
+            Text(
+                text = "Are you sure you want to mark ${data.name} as finished?",
+                modifier = Modifier.padding(16.dp),
+            )
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth(),
+                horizontalArrangement = Arrangement.Center,
+            ) {
+                TextButton(
+                    onClick = { onDismissRequest() },
+                    enabled = !isDisabled,
+                    modifier = Modifier.padding(8.dp),
+                ) {
+                    Text("Dismiss")
+                }
+                TextButton(
+                    onClick = { onConfirmation() },
+                    enabled = !isDisabled,
+                    modifier = Modifier.padding(8.dp),
+                ) {
+                    Text("Confirm")
+                }
+            }
+        }
+    }
+}
+
+@Composable
 fun ListItemLayout(
     onFinishedClick: () -> Unit,
     onEditClick: () -> Unit,
     onDeleteClick: () -> Unit,
     isDisabled: Boolean,
-    item: ItemData?)
+    item: ItemData?,
+    modifier: Modifier = Modifier)
 {
     if (item != null)
     {
-        ElevatedCard(
-            elevation = CardDefaults.cardElevation(
-                defaultElevation = 6.dp
-            ),
-            modifier = Modifier.fillMaxWidth()
-        ) {
-            Box(modifier = Modifier
-                .padding(16.dp)
-                .fillMaxWidth(),
-                contentAlignment = Alignment.Center)
-            {
-                Text(
-                    item.name,
-                    fontSize = 20.sp
-                )
-            }
-            Text(item.description ?: stringResource(R.string.no_description),
-                modifier = Modifier
-                    .padding(16.dp))
-            FlowRow(modifier = Modifier.padding(16.dp).fillMaxWidth())
-            {
-                Button(
-                    { onFinishedClick() },
-                    enabled = !isDisabled
-                ) {
-                    Icon(Icons.Filled.Check, "Check")
-                    Text("Finished")
-                }
-                Spacer(modifier = Modifier.weight(1.0f))
-                IconButton(
-                    { onEditClick() },
-                    enabled = !isDisabled
-                    ) {
-                    Icon(Icons.Filled.Edit, "Edit")
-                }
-                IconButton(
-                    { onDeleteClick() },
-                    enabled = !isDisabled
-                ) {
-                    Icon(Icons.Filled.Delete, "Delete")
-                }
-            }
+        val image = painterResource(R.drawable.bg_compose_background)
 
+        Box(modifier) {
+            Column {
+                Image(
+                    painter = image,
+                    contentDescription = null,
+                    contentScale = ContentScale.FillWidth,
+                    alpha = 0.5f
+                )
+                ElevatedCard(
+                    elevation = CardDefaults.cardElevation(
+                        defaultElevation = 6.dp
+                    ),
+                    modifier = Modifier.fillMaxWidth()
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .padding(16.dp)
+                            .fillMaxWidth()
+                    )
+                    {
+                        Text(
+                            item.name,
+                            fontSize = 20.sp
+                        )
+                    }
+                    Text(
+                        item.description ?: stringResource(R.string.no_description),
+                        modifier = Modifier
+                            .padding(16.dp)
+                    )
+                    FlowRow(modifier = Modifier.padding(16.dp).fillMaxWidth())
+                    {
+                        Button(
+                            { onFinishedClick() },
+                            enabled = !isDisabled && !item.isExcluded
+                        ) {
+                            Icon(Icons.Filled.Check, "Check")
+                            Text("Finished")
+                        }
+                        Spacer(modifier = Modifier.weight(1.0f))
+                        IconButton(
+                            { onEditClick() },
+                            enabled = !isDisabled
+                        ) {
+                            Icon(Icons.Filled.Edit, "Edit")
+                        }
+                        IconButton(
+                            { onDeleteClick() },
+                            enabled = !isDisabled
+                        ) {
+                            Icon(Icons.Filled.Delete, "Delete")
+                        }
+                    }
+
+                }
+            }
         }
     }
 }
@@ -149,11 +213,27 @@ fun ListItemScreen(
 )
 {
     val uiState by listItemViewModel.uiState.collectAsState()
+    val snackbarManager = LocalSnackbarManager.current;
+    val navController = LocalNavController.current;
 
-    Log.d("ListItemScreen", "uiState: $uiState")
+    val errorMessageMissing = stringResource(R.string.error_message_missing)
+    LaunchedEffect(Unit) {
+        listItemViewModel.events.collect {
+            when (it) {
+                is ListItemUiEvent.NotifyAboutError ->
+                    snackbarManager.showMessage(
+                        message = it.message ?: errorMessageMissing
+                    )
+                is ListItemUiEvent.NotifyAfterFinish -> navController.popBackStack()
+                is ListItemUiEvent.NotifyAfterDelete -> navController.popBackStack()
+            }
+        }
+    }
 
-    if (uiState.deleteConfirmationDialog) {
-        val item = uiState.item
+    val data = uiState.data;
+
+    if (data?.openedDialog == ListItemUiState.OpenedDialog.Delete) {
+        val item = data.item;
 
         if (item != null) {
             DeleteConfirmationDialog(
@@ -165,32 +245,42 @@ fun ListItemScreen(
         }
     }
 
-    LaunchedEffect(Unit)
-    {
-        listItemViewModel.events.collect {
-            when (it) {
-                is ListItemUiEvent.NotifyAboutError -> Log.e("ListItemScreen", it.message ?: "Unknown error")
-            }
+    if (data?.openedDialog == ListItemUiState.OpenedDialog.Finished) {
+        val item = data.item;
+
+        if (item != null) {
+            FinishConfirmationDialog(
+                { listItemViewModel.finishedConfirmationDialogClose() },
+                { listItemViewModel.excludeFromChoosing() },
+                uiState.isRemoteOperationInProgress,
+                item
+            )
         }
     }
 
     Box(modifier = modifier) {
-        val item = uiState.item
-        val isLoading = uiState.isLoading
-        val errorMessage = uiState.errorMessage
+        when {
+            uiState.isOk && !uiState.isAddNew -> ListItemLayout(
+                    { listItemViewModel.finishedConfirmationDialogOpen() },
+                    { listItemViewModel.editScreenOpen() },
+                    { listItemViewModel.deleteConfirmationDialogOpen() },
+                    uiState.isRemoteOperationInProgress,
+                    data!!.item
+                )
+            uiState.isOk && uiState.isAddNew -> {
+                val item = data?.item;
+                if (item != null) {
+                    ListAddLayout(
+                        item,
+                        uiState.isRemoteOperationInProgress,
+                        { listItemViewModel.edit(it) },
+                        { listItemViewModel.editScreenClose() }
+                    )
+                }
+            }
+            uiState.isLoading -> LoadingLayout()
+            uiState.isError -> ErrorLayout(uiState.errorMessage!!)
 
-        if (item != null) {
-            ListItemLayout(
-                { listItemViewModel.finishedConfirmationDialogOpen() },
-                { listItemViewModel.editDialogOpen() },
-                { listItemViewModel.deleteConfirmationDialogOpen() },
-                uiState.isRemoteOperationInProgress,
-                item
-            )
-        } else if (isLoading) {
-            LoadingLayout()
-        } else if (errorMessage != null) {
-            ErrorLayout(errorMessage)
         }
     }
 }

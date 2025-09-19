@@ -1,10 +1,10 @@
 package com.jimx.listitemselector.ui.catalog
 
 import android.util.Log
-import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.jimx.listitemselector.data.category.CategoryRepository
+import com.jimx.listitemselector.model.CategoryData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -19,10 +19,12 @@ import kotlinx.coroutines.launch
 
 @HiltViewModel
 class CatalogViewModel @Inject constructor(
-    savedStateHandle: SavedStateHandle,
     private val repo: CategoryRepository
 ) : ViewModel() {
-    private val _uiState = MutableStateFlow<CatalogUiState>(CatalogUiState.Loading)
+    private val _uiState = MutableStateFlow(CatalogUiState(
+        null,
+        null,
+        CatalogUiState.AddUiData(false, CategoryData(0, ""))))
     val uiState: StateFlow<CatalogUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<CatalogUiEvent>()
@@ -33,23 +35,28 @@ class CatalogViewModel @Inject constructor(
 
         _uiState.update {
             Log.d("CatalogViewModel.reset", "CatalogUiState.Loading")
-            CatalogUiState.Loading
+            it.copy(
+                errorMessage = null,
+                data = null)
         }
 
         viewModelScope.launch {
 
             repo.loadCategories()
                 .catch { e ->
-                    Log.e("CatalogViewModel", e.message ?: "Unknown error")
+                    val errorMessage = e.message ?: "Unknown error"
+                    Log.e("CatalogViewModel", errorMessage)
                     _events.emit(CatalogUiEvent.NotifyAboutError(e.message))
                     _uiState.update {
-                        CatalogUiState.Error(e.message ?: "Unknown error")
+                        it.copy(errorMessage = errorMessage)
                     }
                 }
                 .collect { items ->
                     _uiState.update {
                         Log.d("CatalogViewModel.reset", "CatalogUiState.Success")
-                        CatalogUiState.Success(items)
+                        it.copy(
+                            errorMessage = null,
+                            data = CatalogUiState.Data(items))
                     }
                 }
         }
@@ -60,6 +67,57 @@ class CatalogViewModel @Inject constructor(
             } catch (e: Exception) {
                 Log.e("CatalogViewModel", e.message ?: "Unknown error")
                 _events.emit(CatalogUiEvent.NotifyAboutError(e.message))
+            }
+        }
+    }
+
+    fun openAddForm()
+    {
+        _uiState.value.let {
+            val addData = it.addData;
+            if (addData.isOpen)
+                throw Exception("Unexpected state: dialog is already open")
+
+            _uiState.update { s -> s.copy(
+                addData = addData.copy(
+                    isOpen = true,
+                    item = CategoryData(0, "")))
+            }
+
+        }
+    }
+
+    fun dismissAddForm()
+    {
+        _uiState.value.let {
+            val addData = it.addData;
+            if (!addData.isOpen)
+                throw Exception("Unexpected state: dialog is closed")
+
+            _uiState.update {
+                it.copy(addData = addData.copy(
+                    isOpen = false,
+                    item = CategoryData(0, "")))
+            }
+        }
+    }
+
+    fun saveNewCategory(categoryData: CategoryData)
+    {
+        _uiState.value.let {
+            val addData = it.addData;
+            if (!addData.isOpen)
+                throw Exception("Unexpected state: dialog is closed")
+
+            viewModelScope.launch {
+                _uiState.update { s -> s.copy(isRemoteOperationInProgress = true) }
+                repo.addCategory(categoryData)
+                _uiState.update { s -> s.copy(
+                    isRemoteOperationInProgress = false,
+                    addData = addData.copy(
+                        isOpen = false,
+                        item = CategoryData(0, "")))
+                }
             }
         }
     }

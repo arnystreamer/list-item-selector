@@ -1,5 +1,7 @@
 package com.jimx.listitemselector
 
+import android.util.Log
+import androidx.compose.foundation.layout.consumeWindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
@@ -9,15 +11,20 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHost
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TopAppBar
 import androidx.compose.material3.TopAppBarDefaults
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.compose.NavHost
 import androidx.navigation.NavHostController
@@ -26,6 +33,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.jimx.listitemselector.services.LocalNavController
+import com.jimx.listitemselector.services.LocalSnackbarManager
+import com.jimx.listitemselector.services.SnackbarManager
 import com.jimx.listitemselector.ui.catalog.CatalogScreen
 import com.jimx.listitemselector.ui.catalog.CatalogViewModel
 import com.jimx.listitemselector.ui.list.ListScreen
@@ -118,31 +128,47 @@ fun ListItemSelectorApp(
     navController: NavHostController = rememberNavController()
 ) {
     val backStackEntry by navController.currentBackStackEntryAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
+    val snackbarManager = remember { SnackbarManager(snackbarHostState) }
+
     val currentScreen = getScreenByRoute(backStackEntry?.destination?.route)
 
-    Scaffold(
-        topBar = {
-            ListItemSelectorAppBar(
-                currentScreen,
-                canNavigateBack = navController.previousBackStackEntry != null,
-                navigateUp = { navController.navigateUp() }
-            )
-        }
-    ) { innerPadding ->
-        NavHost(
-            navController,
-            startDestination = buildRoute(null, null),
-            modifier = Modifier.padding(innerPadding)) {
-                composable(route = buildRoute(null, null)
+    CompositionLocalProvider(
+        LocalSnackbarManager provides snackbarManager,
+        LocalNavController provides navController
+    ) {
+        Scaffold(
+            topBar = {
+                ListItemSelectorAppBar(
+                    currentScreen,
+                    canNavigateBack = navController.previousBackStackEntry != null,
+                    navigateUp = { navController.navigateUp() }
+                )
+            },
+            snackbarHost = { SnackbarHost(snackbarHostState) }
+        ) { paddingValues ->
+
+            NavHost(
+                navController,
+                startDestination = buildRoute(null, null),
+                modifier = modifier
+                    .padding(paddingValues)
+                    .consumeWindowInsets(paddingValues)
+            ) {
+
+                composable(
+                    route = buildRoute(null, null)
                 ) { backStackEntry ->
                     val vm: CatalogViewModel = hiltViewModel(backStackEntry)
                     CatalogScreen(
                         { catalog ->
                             navController.navigate(buildRoute(catalog.id, null))
                         },
-                        modifier,
-                        vm)
+                        Modifier,
+                        vm
+                    )
                 }
+
                 composable(
                     route = "${ApplicationScreen.Catalog.name}/{categoryId}/${ApplicationScreen.List.name}",
                     arguments = listOf(navArgument("categoryId") { type = NavType.IntType })
@@ -154,14 +180,14 @@ fun ListItemSelectorApp(
 
                     val vm: ListViewModel = hiltViewModel(backStackEntry)
                     ListScreen(
-                        {},
                         { item ->
                             navController.navigate(buildRoute(categoryId, item.id))
                         },
-                        modifier,
+                        Modifier,
                         vm
                     )
                 }
+
                 composable(
                     route = "${ApplicationScreen.Catalog.name}/{categoryId}/${ApplicationScreen.List.name}/{itemId}/${ApplicationScreen.ListItem.name}",
                     arguments = listOf(
@@ -170,9 +196,11 @@ fun ListItemSelectorApp(
                 ) { backStackEntry ->
                     val vm: ListItemViewModel = hiltViewModel(backStackEntry)
                     ListItemScreen(
-                        modifier,
-                        vm)
+                        Modifier,
+                        vm
+                    )
                 }
+            }
         }
     }
 }

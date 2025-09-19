@@ -58,6 +58,7 @@ public class ListItemsRepository : IListItemsRepository
         
         entity.Name = incomingEntity.Name;
         entity.Description = incomingEntity.Description;
+        entity.IsExcluded = incomingEntity.IsExcluded;
         entity.UpdatedAt = DateTime.UtcNow;
         
         var entry = _context.ListItems.Update(entity);
