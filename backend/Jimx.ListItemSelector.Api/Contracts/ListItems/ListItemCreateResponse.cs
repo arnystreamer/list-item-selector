@@ -1,3 +1,3 @@
 ﻿namespace Jimx.ListItemSelector.Api.Contracts.ListItems;
 
-public record ListItemCreateResponse(int Id);
+public record ListItemCreateResponse(ListItemApi Item);

@@ -4,8 +4,10 @@ import android.util.Log
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.jimx.listitemselector.R
 import com.jimx.listitemselector.data.list.ListRepository
 import com.jimx.listitemselector.model.CategoryData
+import com.jimx.listitemselector.model.ItemData
 import dagger.hilt.android.lifecycle.HiltViewModel
 import jakarta.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
@@ -28,7 +30,10 @@ class ListViewModel @Inject constructor(
 
     private val categoryId: Int = checkNotNull(savedStateHandle["categoryId"])
 
-    private val _uiState = MutableStateFlow<ListUiState>(ListUiState.Loading)
+    private val _uiState = MutableStateFlow<ListUiState>(ListUiState(
+        null,
+        null,
+        ListUiState.AddUiData(false, ItemData(0, "", "", false))))
     val uiState: StateFlow<ListUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<ListUiEvent>()
@@ -38,31 +43,39 @@ class ListViewModel @Inject constructor(
 
         Log.d("ListViewModel", "reset")
 
+
         _uiState.update {
             Log.d("ListViewModel.reset", "ListUiState.Loading")
-            ListUiState.Loading
+            it.copy(
+                errorMessage = null,
+                data = null
+            )
         }
 
         viewModelScope.launch {
-
             repo.loadListItems(categoryId)
                 .onStart {
                     _uiState.update {
-                        ListUiState.Loading
+                        it.copy(
+                            errorMessage = null,
+                            data = null
+                        )
                     }
                 }
                 .catch { e ->
-                    Log.e("ListViewModel", e.message ?: "Unknown error")
+                    val errorMessage = e.message ?: "Unknown error"
+                    Log.e("ListViewModel", errorMessage)
                     _events.emit(ListUiEvent.NotifyAboutError(e.message))
                     _uiState.update {
-                        ListUiState.Error(e.message ?: "Unknown error")
-
+                        it.copy(errorMessage = errorMessage)
                     }
                 }
                 .collect { items ->
                     _uiState.update {
                         Log.d("ListViewModel.reset", "ListUiState.Success")
-                        ListUiState.Success(CategoryData(categoryId, ""), items, null)
+                        it.copy(
+                            errorMessage = null,
+                            data = ListUiState.Data(CategoryData(categoryId, ""), items))
                     }
                 }
         }
@@ -81,7 +94,7 @@ class ListViewModel @Inject constructor(
 
         val currentUiState = _uiState.value;
 
-        if (currentUiState !is ListUiState.Success)
+        if (!currentUiState.isOk)
         {
             Log.e("ListViewModel.choose", "Unexpected state")
             viewModelScope.launch {
@@ -90,14 +103,15 @@ class ListViewModel @Inject constructor(
             return;
         }
 
-        val chosenRandomId = getRandomId(currentUiState)
-        if (chosenRandomId == null)
-            return
+        val currentData = currentUiState.data!!
 
-        val chosenRandomItem = currentUiState.items.first({ it.id == chosenRandomId })
-
-        _uiState.update {
-            ListUiState.Success(CategoryData(categoryId, ""), currentUiState.items, chosenRandomId)
+        val chosenRandomItem = getRandomId(currentData)
+        if (chosenRandomItem != null) {
+            _uiState.update {
+                it.copy(
+                    data = ListUiState.Data(CategoryData(categoryId, ""), currentData.items, chosenRandomItem)
+                )
+            }
         }
 
         viewModelScope.launch {
@@ -105,12 +119,64 @@ class ListViewModel @Inject constructor(
         }
     }
 
-    fun getRandomId(uiState: ListUiState.Success): Int? {
-        val currentItems = uiState.items
-        if (currentItems.isEmpty())
-            return null
+    fun getRandomId(data: ListUiState.Data): ItemData? {
+        val currentItems = data.items.filter { !it.isExcluded }
+        return if (currentItems.isEmpty()) {
+            null
+        } else {
+            currentItems[Random.nextInt(currentItems.size)]
+        }
+    }
 
-        return currentItems.get(Random.nextInt(currentItems.size)).id
+    fun openAddForm()
+    {
+        _uiState.value.let {
+            val addData = it.addData;
+            if (addData.isOpen)
+                throw Exception("Unexpected state: dialog is already open")
+
+            _uiState.update { s -> s.copy(
+                addData = addData.copy(
+                    isOpen = true,
+                    item = ItemData(0, "", null, false)))
+            }
+
+        }
+    }
+
+    fun dismissAddForm()
+    {
+        _uiState.value.let {
+            val addData = it.addData;
+            if (!addData.isOpen)
+                throw Exception("Unexpected state: dialog is closed")
+
+            _uiState.update {
+                it.copy(addData = addData.copy(
+                    isOpen = false,
+                    item = ItemData(0, "", null, false)))
+            }
+        }
+    }
+
+    fun saveNewListItem(itemData: ItemData)
+    {
+        _uiState.value.let {
+            val addData = it.addData
+            if (!addData.isOpen)
+                throw Exception("Unexpected state: dialog is closed")
+
+            viewModelScope.launch {
+                _uiState.update { s -> s.copy(isRemoteOperationInProgress = true) }
+                repo.addListItem(categoryId, itemData)
+                _uiState.update { s -> s.copy(
+                    isRemoteOperationInProgress = false,
+                    addData = addData.copy(
+                        isOpen = false,
+                        item = ItemData(0, "", null, false)))
+                }
+            }
+        }
     }
 
     init {

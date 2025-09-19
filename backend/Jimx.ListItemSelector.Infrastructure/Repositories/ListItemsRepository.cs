@@ -17,14 +17,14 @@ public class ListItemsRepository : IListItemsRepository
         _context = context;
     }
 
-    public async Task<int> AddAsync(ListItem listItem, CancellationToken cancellationToken)
+    public async Task<ListItem> AddAsync(ListItem listItem, CancellationToken cancellationToken)
     {
         var entity = listItem.ToEntity();
         entity.UpdatedAt = DateTime.UtcNow;
         
         var entry = _context.ListItems.Add(entity);
         await _context.SaveChangesAsync(cancellationToken);
-        return entry.Entity.Id;
+        return entry.Entity.ToDomain();
     }
 
     public async Task<ListItem?> GetByIdAsync(int id, CancellationToken cancellationToken)
@@ -38,32 +38,37 @@ public class ListItemsRepository : IListItemsRepository
         var entitySpecification = domainSpecification.ToEntitySpecification();
         var query = SpecificationEvaluator.GetQuery(_context.ListItems, entitySpecification);
         return await query.AsNoTracking()
+            .OrderBy(c => new { c.IsExcluded, c.Name })
             .Select(i => i.ToDomain())
             .ToListAsync(cancellationToken);
     }
 
     public async Task<IReadOnlyCollection<ListItem>> GetAllAsync(CancellationToken cancellationToken)
     {
-        return await _context.ListItems.AsNoTracking().Select(i => i.ToDomain()).ToListAsync(cancellationToken);
+        return await _context.ListItems.AsNoTracking()
+            .OrderBy(c => new { c.IsExcluded, c.Name })
+            .Select(i => i.ToDomain())
+            .ToListAsync(cancellationToken);
     }
 
-    public async Task<bool> UpdateAsync(ListItem listItem, CancellationToken cancellationToken)
+    public async Task<ListItem?> UpdateAsync(ListItem listItem, CancellationToken cancellationToken)
     {
         var incomingEntity = listItem.ToEntity();
         var entity = await _context.ListItems.FindAsync([incomingEntity.Id], cancellationToken);
         if (entity == null)
         {
-            return false;
+            return null;
         }
         
         entity.Name = incomingEntity.Name;
         entity.Description = incomingEntity.Description;
+        entity.IsExcluded = incomingEntity.IsExcluded;
         entity.UpdatedAt = DateTime.UtcNow;
         
-        _context.ListItems.Update(entity);
+        var entry = _context.ListItems.Update(entity);
         await _context.SaveChangesAsync(cancellationToken);
 
-        return true;
+        return entry.Entity.ToDomain();
     }
 
     public async Task<bool> DeleteAsync(int id, CancellationToken cancellationToken)

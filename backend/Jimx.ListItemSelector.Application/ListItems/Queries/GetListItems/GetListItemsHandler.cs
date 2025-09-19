@@ -36,6 +36,11 @@ public class GetListItemsHandler : IRequestHandler<GetListItemsQuery, IReadOnlyC
         {
             specs.Add(new ListItemByDescriptionContainsSpec(request.DescriptionContains));
         }
+        
+        if (request.IsExcluded.HasValue)
+        {
+            specs.Add(new ListItemByIsExcludedSpec(request.IsExcluded.Value));
+        }
 
         IReadOnlyCollection<ListItem> domainItems;
         if (specs.Any())

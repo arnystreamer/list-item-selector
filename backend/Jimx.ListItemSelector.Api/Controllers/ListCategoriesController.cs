@@ -1,10 +1,12 @@
 ﻿using Jimx.ListItemSelector.Api.Contracts.ListCategories;
+using Jimx.ListItemSelector.Api.Mapping;
 using Jimx.ListItemSelector.Application.ListCategories.Commands.CreateListCategory;
 using Jimx.ListItemSelector.Application.ListCategories.Commands.DeleteListCategory;
 using Jimx.ListItemSelector.Application.ListCategories.Commands.UpdateListCategory;
 using Jimx.ListItemSelector.Application.ListCategories.Queries.GetListCategories;
 using Jimx.ListItemSelector.Application.ListCategories.Queries.GetListCategoryById;
 using MediatR;
+using Microsoft.AspNetCore.Http.HttpResults;
 using Microsoft.AspNetCore.Mvc;
 
 namespace Jimx.ListItemSelector.Api.Controllers;
@@ -33,7 +35,13 @@ public class ListCategoriesController : ControllerBase
             return BadRequest(result.Errors);
         }
 
-        var response = new ListCategoryCreateResponse(result.Entity!.Id);
+        if (result.Entity == null)
+        {
+            _logger.LogError("Failed to create list category: {@request}. No error, but returned empty entity", request);
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }
+
+        var response = new ListCategoryCreateResponse(result.Entity.ToApi());
         return Ok(response);
     }
 
@@ -64,7 +72,7 @@ public class ListCategoriesController : ControllerBase
     }
     
     [HttpPut("{id:int}")]
-    public async Task<IActionResult> Update(int id, [FromBody] ListCategoryUpdateRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ListCategoryUpdateResponse>> Update(int id, [FromBody] ListCategoryUpdateRequest request, CancellationToken cancellationToken)
     {
         if (id != request.Id)
         {
@@ -76,11 +84,18 @@ public class ListCategoriesController : ControllerBase
         var result = await _mediator.Send(command, cancellationToken);
         if (!result.IsSuccess)
         {
-            _logger.LogError("Failed to update list item: {@request}. Errors: {@errors}", request, result.Errors);
+            _logger.LogError("Failed to update list category: {@request}. Errors: {@errors}", request, result.Errors);
             return BadRequest(result.Errors);
         }
         
-        return NoContent();
+        if (result.Entity == null)
+        {
+            _logger.LogError("Failed to update list category: {@request}. No error, but returned empty entity", request);
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }
+
+        var response = new ListCategoryUpdateResponse(result.Entity.ToApi());
+        return Ok(response);
     }
     
     [HttpDelete("{id:int}")]

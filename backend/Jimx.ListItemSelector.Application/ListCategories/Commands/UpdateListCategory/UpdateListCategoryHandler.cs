@@ -1,11 +1,13 @@
 ﻿using Jimx.Common.Models;
 using Jimx.ListItemSelector.Application.Common.Interfaces;
+using Jimx.ListItemSelector.Application.ListCategories.Dto;
+using Jimx.ListItemSelector.Application.Mapping;
 using Jimx.ListItemSelector.Domain.Entities;
 using MediatR;
 
 namespace Jimx.ListItemSelector.Application.ListCategories.Commands.UpdateListCategory;
 
-public class UpdateListCategoryHandler : IRequestHandler<UpdateListCategoryCommand, Result>
+public class UpdateListCategoryHandler : IRequestHandler<UpdateListCategoryCommand, Result<ListCategoryDto>>
 {
     private readonly IListCategoriesRepository _repository;
 
@@ -14,15 +16,15 @@ public class UpdateListCategoryHandler : IRequestHandler<UpdateListCategoryComma
         _repository = repository;
     }
 
-    public async Task<Result> Handle(UpdateListCategoryCommand request, CancellationToken cancellationToken)
+    public async Task<Result<ListCategoryDto>> Handle(UpdateListCategoryCommand request, CancellationToken cancellationToken)
     {
-        var entity = new ListCategory(request.Id, request.Name);
-        var result = await _repository.UpdateAsync(entity, cancellationToken);
-        if (!result)
+        var entity = request.ToDomain();
+        var category = await _repository.UpdateAsync(entity, cancellationToken);
+        if (category == null)
         {
-            return Result.Fail($"Updating list category with id {request.Id} was unsuccessful");
+            return Result<ListCategoryDto>.Fail($"Updating list category with id {request.Id} was unsuccessful");
         }
         
-        return Result.Ok();
+        return Result<ListCategoryDto>.Ok(category.ToDto());
     }
 }

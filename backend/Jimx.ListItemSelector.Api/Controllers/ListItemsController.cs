@@ -1,12 +1,10 @@
-﻿using Jimx.Common.WebApi.Models;
-using Jimx.ListItemSelector.Api.Contracts.ListItems;
+﻿using Jimx.ListItemSelector.Api.Contracts.ListItems;
 using Jimx.ListItemSelector.Api.Mapping;
 using Jimx.ListItemSelector.Application.ListItems.Commands.CreateListItem;
 using Jimx.ListItemSelector.Application.ListItems.Commands.DeleteListItem;
 using Jimx.ListItemSelector.Application.ListItems.Commands.UpdateListItem;
 using Jimx.ListItemSelector.Application.ListItems.Queries.GetListItemById;
 using Jimx.ListItemSelector.Application.ListItems.Queries.GetListItems;
-using Jimx.ListItemSelector.Domain.Entities;
 using MediatR;
 using Microsoft.AspNetCore.Mvc;
 
@@ -28,7 +26,7 @@ public class ListItemsController : ControllerBase
     [HttpPost]
     public async Task<ActionResult<ListItemCreateResponse>> Create([FromBody] ListItemCreateRequest request, CancellationToken cancellationToken)
     {
-        var command = new CreateListItemCommand(request.CategoryId, request.Name, request.Description);
+        var command = new CreateListItemCommand(request.CategoryId, request.Name, request.Description, request.IsExcluded);
         var result = await _mediator.Send(command, cancellationToken);
         if (!result.IsSuccess)
         {
@@ -36,7 +34,13 @@ public class ListItemsController : ControllerBase
             return BadRequest(result.Errors);
         }
         
-        var response = new ListItemCreateResponse(result.Entity!.Id);
+        if (result.Entity == null)
+        {
+            _logger.LogError("Failed to create list item: {@request}. No error, but returned empty entity", request);
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }
+
+        var response = new ListItemCreateResponse(result.Entity.ToApi());
         return Ok(response);
     }
     
@@ -44,7 +48,7 @@ public class ListItemsController : ControllerBase
     public async Task<ActionResult<ListItemGetAllResponse>> GetAll([FromQuery] ListItemGetAllRequest request,
         CancellationToken cancellationToken)
     {
-        var query = new GetListItemsQuery(request.CategoryId, request.Name, request.Description);
+        var query = new GetListItemsQuery(request.CategoryId, request.Name, request.Description, request.IsExcluded);
         var items = await _mediator.Send(query, cancellationToken);
 
         var response = new ListItemGetAllResponse(items.Select(i => i.ToApi()).ToList());
@@ -67,7 +71,7 @@ public class ListItemsController : ControllerBase
     }
     
     [HttpPut("{id}")]
-    public async Task<IActionResult> Update(int id, [FromBody] ListItemUpdateRequest request, CancellationToken cancellationToken)
+    public async Task<ActionResult<ListItemUpdateResponse>> Update(int id, [FromBody] ListItemUpdateRequest request, CancellationToken cancellationToken)
     {
         if (id != request.Id)
         {
@@ -75,7 +79,7 @@ public class ListItemsController : ControllerBase
             return BadRequest("Mismatched IDs");
         }
 
-        var command = new UpdateListItemCommand(id, request.Name, request.Description);
+        var command = new UpdateListItemCommand(id, request.Name, request.Description, request.IsExcluded);
         var result = await _mediator.Send(command, cancellationToken);
         if (!result.IsSuccess)
         {
@@ -83,7 +87,14 @@ public class ListItemsController : ControllerBase
             return BadRequest(result.Errors);
         }
         
-        return NoContent();
+        if (result.Entity == null)
+        {
+            _logger.LogError("Failed to create list item: {@request}. No error, but returned empty entity", request);
+            return new StatusCodeResult(StatusCodes.Status500InternalServerError);
+        }
+
+        var response = new ListItemUpdateResponse(result.Entity.ToApi());
+        return Ok(response);
     }
     
     [HttpDelete("{id}")]

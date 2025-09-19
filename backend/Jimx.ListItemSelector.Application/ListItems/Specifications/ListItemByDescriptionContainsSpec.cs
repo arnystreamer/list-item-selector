@@ -15,3 +15,15 @@ public class ListItemByDescriptionContainsSpec : ISpecification<ListItem>
 
     public Expression<Func<ListItem, bool>> Criteria => c => c.Description != null && c.Description.Contains(_description);
 }
+
+public class ListItemByIsExcludedSpec : ISpecification<ListItem>
+{
+    private readonly bool _isExcluded;
+
+    public ListItemByIsExcludedSpec(bool isExcluded)
+    {
+        _isExcluded = isExcluded;
+    }
+
+    public Expression<Func<ListItem, bool>> Criteria => c => c.IsExcluded == _isExcluded;
+}

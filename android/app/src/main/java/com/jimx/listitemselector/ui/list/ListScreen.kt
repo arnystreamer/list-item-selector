@@ -1,9 +1,10 @@
 package com.jimx.listitemselector.ui.list
 
 import LoadingLayout
-import android.content.Intent
 import android.content.Context
+import android.content.Intent
 import androidx.compose.foundation.Image
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -12,6 +13,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
+import androidx.compose.material.icons.filled.Done
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ThumbUp
 import androidx.compose.material3.FloatingActionButton
@@ -20,8 +22,6 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.SnackbarHost
-import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -29,8 +29,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.layout.ContentScale
@@ -43,28 +41,39 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jimx.listitemselector.R
-import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.services.LocalSnackbarManager
 import com.jimx.listitemselector.ui.common.ErrorLayout
-import kotlinx.coroutines.launch
+import com.jimx.listitemselector.ui.common.ListAddLayout
+import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
 @Composable
-fun ItemsList(selectedId: Int?, items: List<ItemData>, modifier: Modifier = Modifier) {
+fun ItemsList(selectedId: Int?, items: List<ItemData>, onItemClick: (ItemData) -> Unit,
+              modifier: Modifier = Modifier) {
     LazyColumn(modifier = modifier) {
         items(items) { item ->
-            ListItemLine(item,
-                isChosen = item.id == selectedId)
+            ListItemLine(
+                item,
+                isChosen = item.id == selectedId,
+                onItemClick)
         }
     }
 }
 
 @Composable
-fun ListItemLine(item: ItemData, isChosen: Boolean) {
+fun ListItemLine(item: ItemData, isChosen: Boolean, onItemClick: (ItemData) -> Unit) {
     ListItem(
         headlineContent = { Text(item.name) },
         supportingContent = {
-            if (item.description != null)
-                Text(item.description)
+            if (item.description != null) {
+
+                if (item.description.length > 100) {
+                    Text(item.description.substring(0, 100) + "...")
+                } else {
+                    Text(item.description)
+                }
+
+            }
         },
         trailingContent = {
             if (isChosen) {
@@ -74,6 +83,17 @@ fun ListItemLine(item: ItemData, isChosen: Boolean) {
                     modifier = Modifier.padding(8.dp)
                 )
             }
+
+            if (item.isExcluded) {
+                Icon(
+                    Icons.Filled.Done,
+                    contentDescription = "Finished",
+                    modifier = Modifier.padding(8.dp)
+                )
+            }
+        },
+        modifier = Modifier.clickable {
+            onItemClick(item)
         }
     )
     HorizontalDivider()
@@ -82,21 +102,17 @@ fun ListItemLine(item: ItemData, isChosen: Boolean) {
 @Composable
 fun ListLayout(
     onChooseListItemClick: () -> Unit,
+    onAddClick: () -> Unit,
     items: List<ItemData>,
+    onItemClick: (ItemData) -> Unit,
     selectedId: Int?,
     modifier: Modifier = Modifier
 ) {
-    val image = painterResource(R.drawable.bg_compose_background)
     val title = stringResource(R.string.list_title_text)
 
     Box(modifier = modifier) {
         Column {
-            Image(
-                painter = image,
-                contentDescription = null,
-                contentScale = ContentScale.FillWidth,
-                alpha = 0.5f
-            )
+
             Text(
                 text = title,
                 textAlign = TextAlign.Center,
@@ -104,29 +120,28 @@ fun ListLayout(
                 lineHeight = 24.sp,
                 modifier = Modifier.padding(16.dp)
             )
-            ItemsList(selectedId, items)
+            ItemsList(selectedId, items, onItemClick)
         }
     }
 
     Box(modifier = modifier.fillMaxSize())
     {
-        if (false) {
-            FloatingActionButton(
-                onClick = { },
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(16.dp)
-            )
-            {
-                Icon(Icons.Filled.Add, "Add")
-            }
+        FloatingActionButton(
+            onClick = onAddClick,
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(16.dp)
+        )
+        {
+            Icon(Icons.Filled.Add, "Add")
         }
 
         FloatingActionButton(
             onClick = onChooseListItemClick,
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(16.dp)
+                .align(Alignment.BottomEnd)
+                .padding(16.dp, 16.dp, 102.dp, 16.dp)
+
         )
         {
             Icon(Icons.Filled.PlayArrow, "Choose")
@@ -136,65 +151,95 @@ fun ListLayout(
 
 @Composable
 fun ListScreen(
+    onListItemClick: (item: ItemData) -> Unit,
+    modifier: Modifier = Modifier,
     listViewModel: ListViewModel = viewModel()
 )
 {
-    val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
     val uiState by listViewModel.uiState.collectAsState()
     val context = LocalContext.current
+    val snackbarManager = LocalSnackbarManager.current;
 
+    val errorMessageMissing = stringResource(R.string.error_message_missing)
     LaunchedEffect(Unit) {
         listViewModel.events.collect {
             when (it) {
-                is ListUiEvent.NotifyAboutSelectedListItem ->
-                    scope.launch {
-                        val snackbarResult = snackbarHostState.showSnackbar(
+                is ListUiEvent.NotifyAboutSelectedListItem -> {
+                    if (it.item != null) {
+                        snackbarManager.showMessage(
                             message = "Selected item: ${it.item.name}",
                             actionLabel = "Share",
                             withDismissAction = true
-                        )
-
-                        when (snackbarResult) {
-                            SnackbarResult.ActionPerformed -> {
-                                shareChosen(context,it.item)
-                            }
-                            SnackbarResult.Dismissed -> {
-                                // do nothing
+                        ) { result ->
+                            if (result == SnackbarResult.ActionPerformed) {
+                                shareChosen(context, it.item)
                             }
                         }
+                    } else {
+                        snackbarManager.showMessage("No item selected")
                     }
+                }
 
                 is ListUiEvent.NotifyAboutError ->
-                    scope.launch {
-                        snackbarHostState.showSnackbar(
-                            message = it.message ?: "Unknown error"
-                        )
-                    }
+                    snackbarManager.showMessage(
+                        message = it.message ?: errorMessageMissing
+                    )
             }
         }
     }
 
-    Scaffold(
-        snackbarHost = {
-            SnackbarHost(
-                snackbarHostState,
-                modifier = Modifier.padding(0.dp, 0.dp, 0.dp, 64.dp)
-            )
-        },
-        content = { paddingValues -> when (uiState) {
-            is ListUiState.Loading -> LoadingLayout(modifier = Modifier.padding(paddingValues))
-            is ListUiState.Success -> ListLayout(
+    Box(modifier) {
+        val commonModifier = modifier.fillMaxSize()
+
+        when {
+            uiState.isLoading -> LoadingLayout(modifier = commonModifier)
+
+            uiState.isOk && !uiState.isAddNew -> ListLayout(
                 { listViewModel.choose() },
-                (uiState as ListUiState.Success).items,
-                (uiState as ListUiState.Success).currentSelectedItemId,
-                Modifier.padding(paddingValues)
+                { listViewModel.openAddForm() },
+                uiState.data!!.items,
+                onListItemClick,
+                uiState.data?.chosenItem?.id,
+                commonModifier
             )
-            is ListUiState.Error -> ErrorLayout((uiState as ListUiState.Error).message,
-                Modifier.padding(paddingValues))
-            }
-        })
+
+            uiState.isOk && uiState.isAddNew -> ListAddLayout(
+                uiState.addData.item,
+                uiState.isRemoteOperationInProgress,
+                { item -> listViewModel.saveNewListItem(item) },
+                { listViewModel.dismissAddForm() },
+                commonModifier
+            )
+
+            uiState.isError -> ErrorLayout(uiState.errorMessage!!,
+                commonModifier)
+        }
+    }
 }
+@Preview(showBackground = true)
+@Composable
+fun ListAddLayoutPreview() {
+    ListItemSelectorTheme {
+        Surface(
+            modifier = Modifier
+                .fillMaxSize(),
+            color = MaterialTheme.colorScheme.background
+        ) {
+            ListAddLayout(
+                ItemData(
+                    1,
+                    "Orci varius",
+                    "Sed vulputate eros at nibh dignissim, non scelerisque nulla auctor",
+                    false
+                ),
+                false,
+                {},
+                {}
+            )
+        }
+    }
+}
+
 
 @Preview(showBackground = true)
 @Composable
@@ -205,7 +250,29 @@ fun ListScreenPreview() {
                 .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            ListScreen()
+            val items =  listOf(
+                ItemData(1, "Orci varius", "Sed vulputate eros at nibh dignissim, non scelerisque nulla auctor", false),
+                ItemData(2, "Phasellus accumsan ut metus eget laoreet interdum quam", "Proin at sapien vitae purus mollis facilisis", false),
+                ItemData(3, "Nulla blandit lorem", "Donec efficitur lectus nisl", false),
+                ItemData(4, "Cras non mi eu ipsum", "Vestibulum laoreet sem tristique tellus congue vulputate", false),
+                ItemData(5, "Quisque facilisis arcu et libero", "Fusce eros est, elementum eu sem vel, semper accumsan nulla", true),
+                ItemData(6, "Praesent ut dignissim lectus", "Fusce leo nulla, faucibus varius rutrum vitae", false),
+                ItemData(7, "Aliquam at enim nibh", "Mauris pharetra pulvinar neque", false),
+                ItemData(8, "Integer eleifend ligula eu quam vehicula porttitor", "Aenean porttitor urna eget consectetur ultricies", false),
+                ItemData(9, "Nullam ac metus sed tortor commodo ", "Praesent auctor a justo sed faucibus", true),
+                ItemData(10, "Proin suscipit risus nec diam", "Fusce eros est, elementum eu sem vel, semper accumsan nulla", false),
+            )
+
+            Scaffold(
+                content = { paddingValues ->
+                    ListLayout({},
+                        {},
+                        items,
+                        {},
+                        null,
+                        Modifier.padding(paddingValues))
+                }
+            )
         }
     }
 }
