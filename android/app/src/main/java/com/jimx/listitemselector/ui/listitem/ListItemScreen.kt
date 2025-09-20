@@ -2,22 +2,18 @@ package com.jimx.listitemselector.ui.listitem
 
 import LoadingLayout
 import androidx.compose.foundation.Image
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.FlowRow
-import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Check
 import androidx.compose.material.icons.filled.Delete
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material3.Button
-import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.ElevatedCard
 import androidx.compose.material3.Icon
@@ -25,7 +21,6 @@ import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
@@ -37,101 +32,14 @@ import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import androidx.compose.ui.window.Dialog
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jimx.listitemselector.R
 import com.jimx.listitemselector.model.ItemData
 import com.jimx.listitemselector.services.LocalNavController
 import com.jimx.listitemselector.services.LocalSnackbarManager
+import com.jimx.listitemselector.ui.common.ConfirmationDialog
 import com.jimx.listitemselector.ui.common.ErrorLayout
-import com.jimx.listitemselector.ui.common.ListAddLayout
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
-
-@Composable
-fun DeleteConfirmationDialog(
-    onDismissRequest: () -> Unit,
-    onConfirmation: () -> Unit,
-    isDisabled: Boolean,
-    data: ItemData)
-{
-    Dialog(onDismissRequest = { onDismissRequest() })
-    {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "Are you sure you want to delete ${data.name}?",
-                modifier = Modifier.padding(16.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                TextButton(
-                    onClick = { onDismissRequest() },
-                    enabled = !isDisabled,
-                    modifier = Modifier.padding(8.dp),
-                ) {
-                    Text("Dismiss")
-                }
-                TextButton(
-                    onClick = { onConfirmation() },
-                    enabled = !isDisabled,
-                    modifier = Modifier.padding(8.dp),
-                ) {
-                    Text("Confirm")
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun FinishConfirmationDialog(
-    onDismissRequest: () -> Unit,
-    onConfirmation: () -> Unit,
-    isDisabled: Boolean,
-    data: ItemData)
-{
-    Dialog(onDismissRequest = { onDismissRequest() })
-    {
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(16.dp),
-            shape = RoundedCornerShape(16.dp),
-        ) {
-            Text(
-                text = "Are you sure you want to mark ${data.name} as finished?",
-                modifier = Modifier.padding(16.dp),
-            )
-            Row(
-                modifier = Modifier
-                    .fillMaxWidth(),
-                horizontalArrangement = Arrangement.Center,
-            ) {
-                TextButton(
-                    onClick = { onDismissRequest() },
-                    enabled = !isDisabled,
-                    modifier = Modifier.padding(8.dp),
-                ) {
-                    Text("Dismiss")
-                }
-                TextButton(
-                    onClick = { onConfirmation() },
-                    enabled = !isDisabled,
-                    modifier = Modifier.padding(8.dp),
-                ) {
-                    Text("Confirm")
-                }
-            }
-        }
-    }
-}
 
 @Composable
 fun ListItemLayout(
@@ -213,8 +121,8 @@ fun ListItemScreen(
 )
 {
     val uiState by listItemViewModel.uiState.collectAsState()
-    val snackbarManager = LocalSnackbarManager.current;
-    val navController = LocalNavController.current;
+    val snackbarManager = LocalSnackbarManager.current
+    val navController = LocalNavController.current
 
     val errorMessageMissing = stringResource(R.string.error_message_missing)
     LaunchedEffect(Unit) {
@@ -230,50 +138,52 @@ fun ListItemScreen(
         }
     }
 
-    val data = uiState.data;
+    val data = uiState.data
 
     if (data?.openedDialog == ListItemUiState.OpenedDialog.Delete) {
-        val item = data.item;
+        val item = data.item
 
         if (item != null) {
-            DeleteConfirmationDialog(
+            ConfirmationDialog(
                 { listItemViewModel.deleteConfirmationDialogClose() },
                 { listItemViewModel.delete() },
                 uiState.isRemoteOperationInProgress,
-                item
+                "delete",
+                item.name
             )
         }
     }
 
     if (data?.openedDialog == ListItemUiState.OpenedDialog.Finished) {
-        val item = data.item;
+        val item = data.item
 
         if (item != null) {
-            FinishConfirmationDialog(
+            ConfirmationDialog(
                 { listItemViewModel.finishedConfirmationDialogClose() },
                 { listItemViewModel.excludeFromChoosing() },
                 uiState.isRemoteOperationInProgress,
-                item
+                "finish",
+                item.name
             )
         }
     }
 
     Box(modifier = modifier) {
         when {
-            uiState.isOk && !uiState.isAddNew -> ListItemLayout(
+            uiState.isOk && !uiState.isEdit -> ListItemLayout(
                     { listItemViewModel.finishedConfirmationDialogOpen() },
                     { listItemViewModel.editScreenOpen() },
                     { listItemViewModel.deleteConfirmationDialogOpen() },
                     uiState.isRemoteOperationInProgress,
                     data!!.item
                 )
-            uiState.isOk && uiState.isAddNew -> {
-                val item = data?.item;
+            uiState.isOk && uiState.isEdit -> {
+                val item = data?.item
                 if (item != null) {
-                    ListAddLayout(
+                    ListItemAddLayout(
                         item,
                         uiState.isRemoteOperationInProgress,
-                        { listItemViewModel.edit(it) },
+                        { listItemViewModel.saveModifiedItem(it) },
                         { listItemViewModel.editScreenClose() }
                     )
                 }

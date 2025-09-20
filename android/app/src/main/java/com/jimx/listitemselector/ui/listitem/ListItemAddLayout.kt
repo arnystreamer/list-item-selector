@@ -1,4 +1,4 @@
-package com.jimx.listitemselector.ui.common
+package com.jimx.listitemselector.ui.listitem
 
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
@@ -25,7 +25,7 @@ import androidx.compose.ui.unit.sp
 import com.jimx.listitemselector.model.ItemData
 
 @Composable
-fun ListAddLayout(
+fun ListItemAddLayout(
     item: ItemData,
     isDisabled: Boolean,
     onSubmitClick: (ItemData) -> Unit,

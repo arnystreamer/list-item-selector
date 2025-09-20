@@ -21,6 +21,12 @@ class CategoryRepositoryImpl @Inject constructor(
         return local.observeItems().map { it.map { i -> i.toData() } }
     }
 
+    override suspend fun getCategory(categoryId: Int): CategoryData {
+        Log.d("CategoryRepositoryImpl", "getCategoryById: $categoryId")
+        val remoteItem = remote.getItem(categoryId).toData()
+        return remoteItem
+    }
+
     override suspend fun addCategory(category: CategoryData) {
         Log.d("CategoryRepositoryImpl", "addCategory: $category")
         val remoteItem = remote.addItem(category.toDto())
