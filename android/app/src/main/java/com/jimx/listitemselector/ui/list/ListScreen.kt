@@ -3,22 +3,28 @@ package com.jimx.listitemselector.ui.list
 import LoadingLayout
 import android.content.Context
 import android.content.Intent
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.Done
+import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.PlayArrow
 import androidx.compose.material.icons.filled.ThumbUp
+import androidx.compose.material3.DropdownMenu
+import androidx.compose.material3.DropdownMenuItem
 import androidx.compose.material3.FloatingActionButton
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.ListItem
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Scaffold
@@ -26,14 +32,16 @@ import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
@@ -41,16 +49,23 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.jimx.listitemselector.R
+import com.jimx.listitemselector.model.CategoryData
 import com.jimx.listitemselector.model.ItemData
+import com.jimx.listitemselector.services.LocalLazyListState
+import com.jimx.listitemselector.services.LocalNavController
 import com.jimx.listitemselector.services.LocalSnackbarManager
+import com.jimx.listitemselector.ui.common.ConfirmationDialog
 import com.jimx.listitemselector.ui.common.ErrorLayout
-import com.jimx.listitemselector.ui.common.ListAddLayout
+import com.jimx.listitemselector.ui.listitem.ListItemAddLayout
 import com.jimx.listitemselector.ui.theme.ListItemSelectorTheme
 
 @Composable
 fun ItemsList(selectedId: Int?, items: List<ItemData>, onItemClick: (ItemData) -> Unit,
               modifier: Modifier = Modifier) {
-    LazyColumn(modifier = modifier) {
+
+    val lazyListState = LocalLazyListState.current
+
+    LazyColumn(modifier = modifier, state = lazyListState) {
         items(items) { item ->
             ListItemLine(
                 item,
@@ -101,25 +116,54 @@ fun ListItemLine(item: ItemData, isChosen: Boolean, onItemClick: (ItemData) -> U
 
 @Composable
 fun ListLayout(
+    categoryData: CategoryData?,
+    items: List<ItemData>,
+    onEditCategoryClick: () -> Unit,
+    onDeleteCategoryClick: () -> Unit,
     onChooseListItemClick: () -> Unit,
     onAddClick: () -> Unit,
-    items: List<ItemData>,
     onItemClick: (ItemData) -> Unit,
     selectedId: Int?,
     modifier: Modifier = Modifier
 ) {
-    val title = stringResource(R.string.list_title_text)
+    var isMenuExpanded by remember { mutableStateOf(false) }
+
+    val title = categoryData?.name ?: stringResource(R.string.list_title_text)
 
     Box(modifier = modifier) {
         Column {
-
-            Text(
-                text = title,
-                textAlign = TextAlign.Center,
-                fontSize = 24.sp,
-                lineHeight = 24.sp,
-                modifier = Modifier.padding(16.dp)
-            )
+            Row()
+            {
+                Text(
+                    text = title,
+                    textAlign = TextAlign.Center,
+                    fontSize = 24.sp,
+                    lineHeight = 24.sp,
+                    modifier = Modifier.padding(16.dp)
+                )
+                Spacer(Modifier.weight(1f))
+                Box(modifier = Modifier.padding(8.dp))
+                {
+                    IconButton(onClick = { isMenuExpanded = !isMenuExpanded }) {
+                        Icon(Icons.Default.MoreVert, contentDescription = "More options")
+                    }
+                    DropdownMenu(
+                        expanded = isMenuExpanded,
+                        onDismissRequest = { isMenuExpanded = false }
+                    ) {
+                        DropdownMenuItem(
+                            text = { Text("Edit") },
+                            enabled = categoryData != null,
+                            onClick = { onEditCategoryClick() }
+                        )
+                        DropdownMenuItem(
+                            text = { Text("Delete") },
+                            enabled = categoryData != null && items.isEmpty(),
+                            onClick = { onDeleteCategoryClick() }
+                        )
+                    }
+                }
+            }
             ItemsList(selectedId, items, onItemClick)
         }
     }
@@ -158,61 +202,106 @@ fun ListScreen(
 {
     val uiState by listViewModel.uiState.collectAsState()
     val context = LocalContext.current
-    val snackbarManager = LocalSnackbarManager.current;
+    val snackbarManager = LocalSnackbarManager.current
+    val navController = LocalNavController.current
 
     val errorMessageMissing = stringResource(R.string.error_message_missing)
-    LaunchedEffect(Unit) {
-        listViewModel.events.collect {
-            when (it) {
-                is ListUiEvent.NotifyAboutSelectedListItem -> {
-                    if (it.item != null) {
-                        snackbarManager.showMessage(
-                            message = "Selected item: ${it.item.name}",
-                            actionLabel = "Share",
-                            withDismissAction = true
-                        ) { result ->
-                            if (result == SnackbarResult.ActionPerformed) {
-                                shareChosen(context, it.item)
-                            }
-                        }
-                    } else {
-                        snackbarManager.showMessage("No item selected")
-                    }
-                }
 
-                is ListUiEvent.NotifyAboutError ->
-                    snackbarManager.showMessage(
-                        message = it.message ?: errorMessageMissing
-                    )
-            }
+    val data = uiState.data
+    val categoryData = uiState.categoryData
+
+    if (data?.openedDialog == ListUiState.OpenedDialog.Delete && categoryData != null) {
+        if (!data.items.isEmpty()) {
+            throw Exception("Unexpected state: list is not empty")
         }
+
+        ConfirmationDialog(
+            onDismissRequest = { listViewModel.categoryDeleteConfirmationDialogClose() },
+            onConfirmation = { listViewModel.categoryDelete() },
+            isDisabled = uiState.isRemoteOperationInProgress,
+            "delete",
+            categoryData.name
+        )
     }
 
-    Box(modifier) {
-        val commonModifier = modifier.fillMaxSize()
+    CompositionLocalProvider(
+        LocalLazyListState provides rememberLazyListState()
+    ) {
+        val lazyListState = LocalLazyListState.current
 
-        when {
-            uiState.isLoading -> LoadingLayout(modifier = commonModifier)
+        LaunchedEffect(Unit) {
+            listViewModel.events.collect {
+                when (it) {
+                    is ListUiEvent.NotifyAboutSelectedListItem -> {
+                        if (it.item != null) {
+                            snackbarManager.showMessage(
+                                message = "Selected item: ${it.item.name}",
+                                actionLabel = "Share",
+                                withDismissAction = true
+                            ) { result ->
+                                if (result == SnackbarResult.ActionPerformed) {
+                                    shareChosen(context, it.item)
+                                }
+                            }
 
-            uiState.isOk && !uiState.isAddNew -> ListLayout(
-                { listViewModel.choose() },
-                { listViewModel.openAddForm() },
-                uiState.data!!.items,
-                onListItemClick,
-                uiState.data?.chosenItem?.id,
-                commonModifier
-            )
+                            if (it.index != null) {
+                                lazyListState.animateScrollToItem(it.index, -3)
 
-            uiState.isOk && uiState.isAddNew -> ListAddLayout(
-                uiState.addData.item,
-                uiState.isRemoteOperationInProgress,
-                { item -> listViewModel.saveNewListItem(item) },
-                { listViewModel.dismissAddForm() },
-                commonModifier
-            )
+                            }
+                        } else {
+                            snackbarManager.showMessage("No item was chosen")
+                        }
+                    }
 
-            uiState.isError -> ErrorLayout(uiState.errorMessage!!,
-                commonModifier)
+                    is ListUiEvent.NotifyAboutError ->
+                        snackbarManager.showMessage(
+                            message = it.message ?: errorMessageMissing
+                        )
+
+                    is ListUiEvent.NotifyNotifyAfterDelete -> navController.popBackStack()
+                }
+            }
+        }
+
+        Box(modifier) {
+            val commonModifier = modifier.fillMaxSize()
+
+            when {
+                uiState.isLoading -> LoadingLayout(modifier = commonModifier)
+
+                uiState.isOk && !uiState.isAddNew && !uiState.isEditCategory -> ListLayout(
+                    uiState.categoryData,
+                    uiState.data!!.items,
+                    { listViewModel.categoryEditScreenOpen() },
+                    { listViewModel.categoryDeleteConfirmationDialogOpen() },
+                    { listViewModel.choose() },
+                    { listViewModel.openAddForm() },
+                    onListItemClick,
+                    uiState.data?.chosenItem?.id,
+                    commonModifier
+                )
+
+                uiState.isOk && uiState.isAddNew -> ListItemAddLayout(
+                    uiState.addData.item,
+                    uiState.isRemoteOperationInProgress,
+                    { item -> listViewModel.saveNewListItem(item) },
+                    { listViewModel.dismissAddForm() },
+                    commonModifier
+                )
+
+                uiState.isOk && uiState.isEditCategory -> ListAddLayout(
+                    uiState.editCategoryData.item,
+                    uiState.isRemoteOperationInProgress,
+                    { item -> listViewModel.saveModifiedCategory(item) },
+                    { listViewModel.categoryEditScreenClose() },
+                    commonModifier
+                )
+
+                uiState.isError -> ErrorLayout(
+                    uiState.errorMessage!!,
+                    commonModifier
+                )
+            }
         }
     }
 }
@@ -225,7 +314,7 @@ fun ListAddLayoutPreview() {
                 .fillMaxSize(),
             color = MaterialTheme.colorScheme.background
         ) {
-            ListAddLayout(
+            ListItemAddLayout(
                 ItemData(
                     1,
                     "Orci varius",
@@ -265,9 +354,13 @@ fun ListScreenPreview() {
 
             Scaffold(
                 content = { paddingValues ->
-                    ListLayout({},
-                        {},
+                    ListLayout(
+                        CategoryData(1, "Some name"),
                         items,
+                        {},
+                        {},
+                        {},
+                        {},
                         {},
                         null,
                         Modifier.padding(paddingValues))

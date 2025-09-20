@@ -21,10 +21,14 @@ import kotlinx.coroutines.launch
 class CatalogViewModel @Inject constructor(
     private val repo: CategoryRepository
 ) : ViewModel() {
+
+    val emptyAddData: CatalogUiState.AddUiData
+        get() = CatalogUiState.AddUiData(false, CategoryData(0, ""))
+
     private val _uiState = MutableStateFlow(CatalogUiState(
         null,
         null,
-        CatalogUiState.AddUiData(false, CategoryData(0, ""))))
+        emptyAddData))
     val uiState: StateFlow<CatalogUiState> = _uiState.asStateFlow()
 
     private val _events = MutableSharedFlow<CatalogUiEvent>()
@@ -74,14 +78,12 @@ class CatalogViewModel @Inject constructor(
     fun openAddForm()
     {
         _uiState.value.let {
-            val addData = it.addData;
+            val addData = it.addData
             if (addData.isOpen)
                 throw Exception("Unexpected state: dialog is already open")
 
             _uiState.update { s -> s.copy(
-                addData = addData.copy(
-                    isOpen = true,
-                    item = CategoryData(0, "")))
+                addData = emptyAddData.copy(isOpen = true))
             }
 
         }
@@ -90,14 +92,12 @@ class CatalogViewModel @Inject constructor(
     fun dismissAddForm()
     {
         _uiState.value.let {
-            val addData = it.addData;
+            val addData = it.addData
             if (!addData.isOpen)
                 throw Exception("Unexpected state: dialog is closed")
 
             _uiState.update {
-                it.copy(addData = addData.copy(
-                    isOpen = false,
-                    item = CategoryData(0, "")))
+                it.copy(addData = emptyAddData.copy(isOpen = false))
             }
         }
     }
@@ -105,18 +105,31 @@ class CatalogViewModel @Inject constructor(
     fun saveNewCategory(categoryData: CategoryData)
     {
         _uiState.value.let {
-            val addData = it.addData;
+            val addData = it.addData
             if (!addData.isOpen)
                 throw Exception("Unexpected state: dialog is closed")
 
             viewModelScope.launch {
                 _uiState.update { s -> s.copy(isRemoteOperationInProgress = true) }
-                repo.addCategory(categoryData)
-                _uiState.update { s -> s.copy(
-                    isRemoteOperationInProgress = false,
-                    addData = addData.copy(
-                        isOpen = false,
-                        item = CategoryData(0, "")))
+                try {
+                    repo.addCategory(categoryData)
+                    _uiState.update { s ->
+                        s.copy(
+                            addData = emptyAddData
+                        )
+                    }
+                }
+                catch (e: Exception) {
+                    val errorMessage = e.message ?: "Unknown error"
+                    Log.e("CatalogViewModel.saveNewCategory", errorMessage)
+                    _events.emit(CatalogUiEvent.NotifyAboutError(errorMessage))
+                }
+                finally {
+                    _uiState.update { s ->
+                        s.copy(
+                            isRemoteOperationInProgress = false
+                        )
+                    }
                 }
             }
         }

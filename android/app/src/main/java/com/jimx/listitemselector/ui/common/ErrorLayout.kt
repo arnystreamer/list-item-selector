@@ -23,6 +23,6 @@ fun ErrorLayout(message: String, modifier: Modifier = Modifier) {
         Image(
             painter = painterResource(id = R.drawable.ic_connection_error), contentDescription = ""
         )
-        Text(text = stringResource(R.string.loading_failed), modifier = Modifier.padding(16.dp))
+        Text(text = stringResource(R.string.loading_failed) + ": " + message, modifier = Modifier.padding(16.dp))
     }
 }

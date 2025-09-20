@@ -5,7 +5,7 @@ import com.jimx.listitemselector.model.ItemData
 data class ListItemUiState(
     val errorMessage: String?,
     val data: Data?,
-    val addData: AddUiData,
+    val editData: AddUiData,
     var isRemoteOperationInProgress: Boolean = false
 ) {
     val isLoading: Boolean
@@ -17,8 +17,8 @@ data class ListItemUiState(
     val isOk: Boolean
         get() = data != null && errorMessage == null
 
-    val isAddNew: Boolean
-        get() = data != null && errorMessage == null && addData.isOpen
+    val isEdit: Boolean
+        get() = data != null && errorMessage == null && editData.isOpen
 
     data class Data(
         val item: ItemData?,

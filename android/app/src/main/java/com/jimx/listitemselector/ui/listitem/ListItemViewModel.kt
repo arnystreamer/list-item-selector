@@ -24,12 +24,12 @@ class ListItemViewModel @Inject constructor(
         private val repo: ListRepository
 ) : ViewModel() {
 
-    val defaultAddData: ListItemUiState.AddUiData
+    val emptyEditData: ListItemUiState.AddUiData
         get() = ListItemUiState.AddUiData(false, ItemData(0, "", null, false))
 
     private val categoryId: Int = checkNotNull(savedStateHandle["categoryId"])
     private val itemId: Int = checkNotNull(savedStateHandle["itemId"])
-    private val _uiState = MutableStateFlow(ListItemUiState(null, null, defaultAddData))
+    private val _uiState = MutableStateFlow(ListItemUiState(null, null, emptyEditData))
     val uiState: StateFlow<ListItemUiState> = _uiState.asStateFlow()
     private val _events = MutableSharedFlow<ListItemUiEvent>()
     val events: SharedFlow<ListItemUiEvent> = _events.asSharedFlow()
@@ -39,7 +39,7 @@ class ListItemViewModel @Inject constructor(
 
         _uiState.update {
             Log.d("ListItemViewModel.reset", "ListItemUiState.Loading")
-            ListItemUiState(null, null, defaultAddData)
+            ListItemUiState(null, null, emptyEditData)
         }
 
         viewModelScope.launch {
@@ -49,7 +49,7 @@ class ListItemViewModel @Inject constructor(
                     Log.e("ListItemViewModel.reset", errorMessage)
                     _events.emit(ListItemUiEvent.NotifyAboutError(errorMessage))
                     _uiState.update {
-                        ListItemUiState(errorMessage, null, defaultAddData)
+                        ListItemUiState(errorMessage, null, emptyEditData)
                     }
                 }
                 .collect { items ->
@@ -59,7 +59,7 @@ class ListItemViewModel @Inject constructor(
                         ListItemUiState(
                             null,
                             ListItemUiState.Data(item, ListItemUiState.OpenedDialog.None),
-                            defaultAddData
+                            emptyEditData
                         )
                     }
                 }
@@ -70,7 +70,7 @@ class ListItemViewModel @Inject constructor(
     {
         Log.d("ListItemViewModel", "finishedConfirmationDialogOpen")
 
-        val data = _uiState.value.data;
+        val data = _uiState.value.data
         if (data == null || data.item == null) {
             throw Exception("Unexpected state")
         }
@@ -118,14 +118,14 @@ class ListItemViewModel @Inject constructor(
 
     fun editScreenOpen()
     {
-        val data = _uiState.value.data;
+        val data = _uiState.value.data
         if (data == null || data.item == null) {
             throw Exception("Unexpected state")
         }
 
         _uiState.update {
             it.copy(
-                addData = it.addData.copy(true, data.item)
+                editData = it.editData.copy(true, data.item)
             )
         }
     }
@@ -134,7 +134,7 @@ class ListItemViewModel @Inject constructor(
     {
         _uiState.update {
             it.copy(
-                addData = defaultAddData
+                editData = emptyEditData
             )
         }
     }
@@ -143,7 +143,7 @@ class ListItemViewModel @Inject constructor(
     {
         Log.d("ListItemViewModel", "excludeFromChoosing")
 
-        val data = _uiState.value.data;
+        val data = _uiState.value.data
         if (data == null || data.item == null) {
             throw Exception("Unexpected state")
         }
@@ -152,11 +152,11 @@ class ListItemViewModel @Inject constructor(
             throw Exception("Item is already excluded")
         }
 
-        _uiState.update {
-            it.copy(isRemoteOperationInProgress = true)
-        }
-
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(isRemoteOperationInProgress = true)
+            }
+
             try {
                 val updatedItemData = data.item.copy(isExcluded = true)
                 repo.editListItem(categoryId, updatedItemData)
@@ -175,33 +175,33 @@ class ListItemViewModel @Inject constructor(
         }
     }
 
-    fun edit(itemData: ItemData)
+    fun saveModifiedItem(itemData: ItemData)
     {
-        Log.d("ListItemViewModel", "edit")
+        Log.d("ListItemViewModel", "saveModifiedItem")
 
-        val data = _uiState.value.data;
+        val data = _uiState.value.data
         if (data == null || data.item == null) {
             throw Exception("Unexpected state")
         }
 
-        _uiState.update {
-            it.copy(isRemoteOperationInProgress = true)
-        }
-
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(isRemoteOperationInProgress = true)
+            }
+
             try {
                 repo.editListItem(categoryId, ItemData(data.item.id, itemData.name, itemData.description, data.item.isExcluded))
             }
             catch (e: Exception) {
                 val errorMessage = e.message ?: "Unknown error"
-                Log.e("ListItemViewModel.edit", errorMessage)
+                Log.e("ListItemViewModel.saveModifiedItem", errorMessage)
                 _events.emit(ListItemUiEvent.NotifyAboutError(errorMessage))
             }
             finally {
                 _uiState.update {
                     it.copy(
                         isRemoteOperationInProgress = false,
-                        addData = it.addData.copy(false, ItemData(0, "", null, false)))
+                        editData = it.editData.copy(false, ItemData(0, "", null, false)))
                 }
             }
         }
@@ -211,16 +211,16 @@ class ListItemViewModel @Inject constructor(
     {
         Log.d("ListItemViewModel", "delete")
 
-        val data = _uiState.value.data;
+        val data = _uiState.value.data
         if (data == null || data.item == null) {
             throw Exception("Unexpected state")
         }
 
-        _uiState.update {
-            it.copy(isRemoteOperationInProgress = true)
-        }
-
         viewModelScope.launch {
+            _uiState.update {
+                it.copy(isRemoteOperationInProgress = true)
+            }
+
             try {
                 repo.deleteListItem(categoryId, data.item)
                 _events.emit(ListItemUiEvent.NotifyAfterDelete(data.item))
